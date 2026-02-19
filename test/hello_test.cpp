@@ -1,9 +1,14 @@
-#include <gtest/gtest.h>
+#include <unity.h>
 
-// Demonstrate some basic assertions.
-TEST(HelloTest, BasicAssertions) {
-  // Expect two strings not to be equal.
-  EXPECT_STRNE("hello", "world");
-  // Expect equality.
-  EXPECT_EQ(7 * 6, 42);
+void setUp(void) {
+    // set stuff up here
+}
+
+void tearDown(void) {
+    // clean stuff up here
+}
+
+int main( int argc, char **argv) {
+    UNITY_BEGIN();
+    UNITY_END();
 }
