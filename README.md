@@ -23,6 +23,15 @@ Unlike standard smart locks that rely on Bluetooth (which often suffers from lat
 * **Safety Lockout:** Implements a "Wrong Try Penalty" that disables inputs for 60 seconds after 5 consecutive failed attempts.
 
 ---
+## Component Pinout
+
+| Component           | Function                 | Pin Type  | GPIO Pin |
+|---------------------|--------------------------|-----------|----------|
+| DW3000 UWB Sensor   | Proximity Detection      | SPI       | 18-21    |
+| RFID Reader         | Token Authentication     | SPI/I2C   | 4        |
+| Capacitive Touch Pad| Manual PIN Entry         | GPIO      | 12       |
+| Reed Switch         | Door Status Detection    | GPIO      | 5        |
+| 12V Solenoid Lock   | Actuator for Locking     | Relay     | 26       |
 
 ## System Architecture
 

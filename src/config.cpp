@@ -11,7 +11,7 @@ inline void pinMode(int, int) {}
 #endif
 
 void setupConfig() {
-    pinMode(LOCK_PIN, OUTPUT);
+    pinMode(RELAY_PIN, OUTPUT);
     pinMode(RFID_SENSOR_PIN, INPUT);
     pinMode(REED_SWITCH_PIN, INPUT_PULLUP);
     pinMode(LED_PIN, OUTPUT);
