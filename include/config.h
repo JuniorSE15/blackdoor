@@ -10,13 +10,13 @@
 #define RFID_CLK_PIN 22 // GPIO pin for RFID sensor
 
 #define REED_SWITCH_PIN 5 // GPIO pin for reed switch
-#define LED_PIN 13 // GPIO pin for status LED
-#define TOUCHPAD_PIN 12 // GPIO pin for touchpad (Touch5)
+#define LED_PIN 13 
+#define TOUCHPAD_PIN 12
 
 // debug
-#define TOUCH_PIN 12 // Must be a touch-capable GPIO (T5 = GPIO 12)
+#define TOUCH_PIN 12
 
-#define DOOR_UNLOCK_TIME 8000 // Time in milliseconds to keep the door unlocked
+#define DOOR_UNLOCK_TIME 8000 // 8 seconds to hold the door open
 
 Adafruit_PN532 nfc(RFID_DATA_PIN, RFID_CLK_PIN);
 

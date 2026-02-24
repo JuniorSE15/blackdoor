@@ -5,15 +5,15 @@
 #include "event.h"
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(115200);
 
   setupConfig();
   calibrateHardware();
+
+  xTaskCreate(handleRFIDEvent, "RFID Event Handler", 4096, NULL, 1, NULL);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   touch_value_t touchValue = touchRead(TOUCH_PIN);
   Serial.print("Touch Value: ");
   Serial.println(touchValue);
@@ -26,7 +26,4 @@ void loop() {
     Serial.println("Relay Deactivated!");
   }
   delay(100);
-
-  xTaskHandle_t eventTaskHandle;
-  xTaskCreate(handleRFIDEvent, "RFID Event Task", 2048, NULL, 1, &eventTaskHandle);
 }
