@@ -2,12 +2,14 @@
 #include <stdio.h>
 
 #include "config.h"
+#include "event.h"
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  pinMode(RELAY_PIN, OUTPUT);
-  pinMode(TOUCH_PIN, INPUT);
+
+  setupConfig();
+  calibrateHardware();
 }
 
 void loop() {
@@ -24,4 +26,7 @@ void loop() {
     Serial.println("Relay Deactivated!");
   }
   delay(100);
+
+  xTaskHandle_t eventTaskHandle;
+  xTaskCreate(handleRFIDEvent, "RFID Event Task", 2048, NULL, 1, &eventTaskHandle);
 }
