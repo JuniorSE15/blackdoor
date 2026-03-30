@@ -7,7 +7,6 @@
 #define OUTPUT 1
 #define INPUT 0
 #define INPUT_PULLUP 2
-inline void pinMode(int, int) {}
 #endif
 
 // Define the nfc object here (declared as extern in config.h)

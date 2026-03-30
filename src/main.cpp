@@ -25,25 +25,6 @@ void setup()
 
 void loop()
 {
-  // // Check for RFID card
-  // String cardUID = readRFIDCard();
-
-  // if (cardUID.length() > 0)
-  // {
-  //   // Card detected - you can add your authorization logic here
-  //   Serial.print("Card UID detected: ");
-  //   Serial.println(cardUID);
-
-  //   // Example: unlock door if card is authorized
-  //   if (!isOpen)
-  //   {
-  //     isOpen = true;
-  //     digitalWrite(RELAY_PIN, HIGH);
-  //     Serial.println("RFID card authorized — door unlocked!");
-  //   }
-  //   delay(1500);
-  // }
-
   // Check touch sensor
   touch_value_t touchValue = touchRead(TOUCH_PIN);
   Serial.print("Touch Value: ");

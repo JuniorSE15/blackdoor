@@ -1,7 +1,7 @@
 #include <unity.h>
 #include "config.h"
 
-void test_setupConfig() {
+void testSetupConfig() {
     setupConfig();
 }
 
@@ -12,7 +12,7 @@ void tearDown() {}
 int main( int argc, char **argv) {
     UNITY_BEGIN();
 
-    RUN_TEST(test_setupConfig);
+    RUN_TEST(testSetupConfig);
 
     UNITY_END();
 }
