@@ -10,7 +10,11 @@
 inline void pinMode(int, int) {}
 #endif
 
-void setupConfig() {
+// Define the nfc object here (declared as extern in config.h)
+Adafruit_PN532 nfc(RFID_DATA_PIN, RFID_CLK_PIN);
+
+void setupConfig()
+{
     pinMode(TOUCH_PIN, INPUT);
 
     pinMode(RELAY_PIN, OUTPUT);
@@ -25,6 +29,7 @@ void setupConfig() {
     nfc.SAMConfig();
 }
 
-void calibrateHardware() {
+void calibrateHardware()
+{
     // TODO: implement
 }
