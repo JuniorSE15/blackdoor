@@ -7,6 +7,8 @@
 
 extern volatile bool isOpen;
 
+void triggerRelay();
+
 void handleRFIDEvent(void* pvParameters);
 void handleDoorEvent(void* pvParameters);
 

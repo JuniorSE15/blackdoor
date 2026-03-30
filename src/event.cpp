@@ -1,27 +1,28 @@
 #include "event.h"
+#include "rfid.h"
+
+void triggerRelay(int state) {
+    digitalWrite(RELAY_PIN, state);
+}
 
 void handleRFIDEvent(void* pvParameters) {
     for (;;) {
-        uint8_t uid[7];
-        uint8_t uidLength;
+        String cardUID = readRFIDCard();
 
-        if (nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength)) {
+        if (cardUID.length() > 0) {
             Serial.print("Found NFC tag with UID: ");
-            for (uint8_t i = 0; i < uidLength; i++) {
-                Serial.print(uid[i], HEX);
-                Serial.print(" ");
-            }
-            Serial.println();
+            Serial.println(cardUID);
+            // TODO: Implement logic to handle the card
+            isOpen = true;
+            triggerRelay(LOW);
         }
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(100)); // Add delay to yield to other tasks
     }
-
-    vTaskDelete(NULL);
 }
 
 void handleDoorEvent(void *pvParameters) {
     for (;;) {
-        bool doorPhysicallyOpen = digitalRead(REED_SWITCH_PIN) == HIGH;
+        bool doorPhysicallyOpen = digitalRead(REED_SWITCH_PIN) == LOW;
 
         if (isOpen) {
             if (doorPhysicallyOpen) {
@@ -29,7 +30,7 @@ void handleDoorEvent(void *pvParameters) {
             } else {
                 vTaskDelay(pdMS_TO_TICKS(DOOR_UNLOCK_TIME));
                 isOpen = false;
-                digitalWrite(RELAY_PIN, LOW);
+                triggerRelay(HIGH);
                 Serial.println("Door auto-locked.");
             }
         }

@@ -29,7 +29,9 @@ void setupConfig()
     nfc.SAMConfig();
 }
 
-void calibrateHardware()
-{
+void wakeUpHardware(volatile bool *isOpen)
+{ 
     // TODO: implement
+    digitalWrite(RELAY_PIN, HIGH);
+    *isOpen = false;
 }

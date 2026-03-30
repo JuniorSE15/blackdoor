@@ -21,6 +21,6 @@
 extern Adafruit_PN532 nfc; // Declare as extern (defined in rfid.cpp)
 
 void setupConfig();
-void calibrateHardware();
+void wakeUpHardware(volatile bool *isOpen);
 
 #endif // CONFIG_H

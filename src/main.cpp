@@ -5,7 +5,7 @@
 #include "event.h"
 #include "rfid.h"
 
-volatile bool isOpen = false; // Global state variable to track if the door is currently open
+volatile bool isOpen = false; 
 
 void setup()
 {
@@ -13,7 +13,8 @@ void setup()
   delay(1000);
 
   setupConfig();
-  calibrateHardware();
+  // HIGH means relay is off (door locked), LOW means relay is on (door unlocked)
+  wakeUpHardware(&isOpen);
 
   // Initialize RFID/NFC reader
   setupRFID();
@@ -24,29 +25,32 @@ void setup()
 
 void loop()
 {
-  // Check for RFID card
-  String cardUID = readRFIDCard();
+  // // Check for RFID card
+  // String cardUID = readRFIDCard();
 
-  if (cardUID.length() > 0)
-  {
-    // Card detected - you can add your authorization logic here
-    Serial.print("Card UID detected: ");
-    Serial.println(cardUID);
+  // if (cardUID.length() > 0)
+  // {
+  //   // Card detected - you can add your authorization logic here
+  //   Serial.print("Card UID detected: ");
+  //   Serial.println(cardUID);
 
-    // Example: unlock door if card is authorized
-    if (!isOpen)
-    {
-      isOpen = true;
-      digitalWrite(RELAY_PIN, HIGH);
-      Serial.println("RFID card authorized — door unlocked!");
-    }
-    delay(1500);
-  }
+  //   // Example: unlock door if card is authorized
+  //   if (!isOpen)
+  //   {
+  //     isOpen = true;
+  //     digitalWrite(RELAY_PIN, HIGH);
+  //     Serial.println("RFID card authorized — door unlocked!");
+  //   }
+  //   delay(1500);
+  // }
 
   // Check touch sensor
   touch_value_t touchValue = touchRead(TOUCH_PIN);
   Serial.print("Touch Value: ");
   Serial.println(touchValue);
+
+  Serial.print("Door State: ");
+  Serial.println(isOpen ? "OPEN" : "CLOSED");
 
   if (touchValue < 40)
   {
