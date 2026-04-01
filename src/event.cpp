@@ -1,15 +1,19 @@
 #include "event.h"
 #include "rfid.h"
 
-void triggerRelay(int state) {
+void triggerRelay(int state)
+{
     digitalWrite(RELAY_PIN, state);
 }
 
-void handleRFIDEvent(void* pvParameters) {
-    for (;;) {
+void handleRFIDEvent(void *pvParameters)
+{
+    for (;;)
+    {
         String cardUID = readRFIDCard();
 
-        if (cardUID.length() > 0) {
+        if (cardUID.length() > 0)
+        {
             Serial.print("Found NFC tag with UID: ");
             Serial.println(cardUID);
             // TODO: Implement logic to handle the card
@@ -20,14 +24,20 @@ void handleRFIDEvent(void* pvParameters) {
     }
 }
 
-void handleDoorEvent(void *pvParameters) {
-    for (;;) {
+void handleDoorEvent(void *pvParameters)
+{
+    for (;;)
+    {
         bool doorPhysicallyOpen = digitalRead(REED_SWITCH_PIN) == LOW;
 
-        if (isOpen) {
-            if (doorPhysicallyOpen) {
+        if (isOpen)
+        {
+            if (doorPhysicallyOpen)
+            {
                 Serial.println("Door is open.");
-            } else {
+            }
+            else
+            {
                 vTaskDelay(pdMS_TO_TICKS(DOOR_UNLOCK_TIME));
                 isOpen = false;
                 triggerRelay(HIGH);
@@ -38,4 +48,16 @@ void handleDoorEvent(void *pvParameters) {
     }
 
     vTaskDelete(NULL);
+}
+
+void onReedChange(bool open)
+{
+    if (open)
+    {
+        Serial.println("Event: Door opened");
+    }
+    else
+    {
+        Serial.println("Event: Door Closed");
+    }
 }

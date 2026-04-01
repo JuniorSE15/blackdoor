@@ -4,8 +4,9 @@
 #include "config.h"
 #include "event.h"
 #include "rfid.h"
+#include "reed.h"
 
-volatile bool isOpen = false; 
+volatile bool isOpen = false;
 
 void setup()
 {
@@ -21,10 +22,14 @@ void setup()
 
   xTaskCreate(handleRFIDEvent, "RFID Event Handler", 4096, NULL, 1, NULL);
   xTaskCreate(handleDoorEvent, "Door Event Handler", 4096, NULL, 1, NULL);
+
+  reed_init(18);
+  reed_set_callback(onReedChange);
 }
 
 void loop()
 {
+  reed_update();
   // Check touch sensor
   touch_value_t touchValue = touchRead(TOUCH_PIN);
   Serial.print("Touch Value: ");
@@ -42,5 +47,15 @@ void loop()
       Serial.println("Touch detected — door unlocked!");
     }
   }
+
+  if (reed_is_open())
+  {
+    Serial.println("The door is open from reed");
+  }
+  else
+  {
+    Serial.println("The door is closed from reed");
+  }
+
   delay(500);
 }

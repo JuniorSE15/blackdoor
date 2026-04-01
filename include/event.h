@@ -9,7 +9,9 @@ extern volatile bool isOpen;
 
 void triggerRelay(int state);
 
-void handleRFIDEvent(void* pvParameters);
-void handleDoorEvent(void* pvParameters);
+void handleRFIDEvent(void *pvParameters);
+void handleDoorEvent(void *pvParameters);
+
+void onReedChange(bool);
 
 #endif // EVENT_H
