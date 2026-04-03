@@ -4,6 +4,9 @@
 #include "config.h"
 #include "event.h"
 #include "rfid.h"
+#include "esp_task_wdt.h"
+
+#define WDT_TIMEOUT_SEC 10
 
 volatile bool isOpen = false; 
 
@@ -12,11 +15,13 @@ void setup()
   Serial.begin(115200);
   delay(1000);
 
+  esp_task_wdt_init(WDT_TIMEOUT_SEC, true);
+  esp_task_wdt_add(NULL);
+
   setupConfig();
   // HIGH means relay is off (door locked), LOW means relay is on (door unlocked)
   wakeUpHardware(&isOpen);
 
-  // Initialize RFID/NFC reader
   setupRFID();
 
   xTaskCreate(handleRFIDEvent, "RFID Event Handler", 4096, NULL, 1, NULL);
@@ -43,4 +48,5 @@ void loop()
     }
   }
   delay(500);
+  esp_task_wdt_reset();
 }

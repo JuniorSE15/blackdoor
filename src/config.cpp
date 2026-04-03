@@ -2,11 +2,6 @@
 
 #ifdef ARDUINO
 #include <Arduino.h>
-#else
-// Stubs for native testing
-#define OUTPUT 1
-#define INPUT 0
-#define INPUT_PULLUP 2
 #endif
 
 // Define the nfc object here (declared as extern in config.h)
