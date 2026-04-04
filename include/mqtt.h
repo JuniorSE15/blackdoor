@@ -12,10 +12,10 @@ static String deviceId;
 static String stateTopic;
 static String actionTopic;
 
+void mqttCallback(char* topic, byte* payload, unsigned int length);
 bool connectToWiFi(const char* ssid, const char* password);
 PubSubClient& setupMQTT(const char* id, const char* broker, int port);
 bool connectToMQTT();
 bool publishState(const char* state);
-void handleMQTTEvent(void* pvParameters);
 
 #endif // MQTT_H

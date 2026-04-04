@@ -33,6 +33,7 @@ void handleMQTTEvent(void* pvParameters) {
         }
         mqttClient.loop();
 
+        // publish door state periodically
         if (isOpen) {
             publishState("unlocked");
         } else {

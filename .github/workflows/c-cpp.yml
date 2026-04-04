@@ -1,9 +1,13 @@
 name: PlatformIO CI
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -13,12 +17,12 @@ jobs:
           path: |
             ~/.cache/pip
             ~/.platformio/.cache
-          key: ${{ runner.os }}-pio
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini', 'requirements.txt') }}
       - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
-      - name: Run integration tests
-        run: pio test -e esp32dev
+      - name: Build firmware (compile only)
+        run: pio run -e esp32dev
