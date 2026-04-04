@@ -3,13 +3,6 @@
 #include "esp_task_wdt.h"
 #include <WiFi.h>
 
-WiFiClient wifiClient;
-PubSubClient mqttClient(wifiClient);
-
-static String deviceId;
-static String stateTopic;
-static String actionTopic;
-
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
     String message;
     for (unsigned int i = 0; i < length; i++) {
@@ -62,13 +55,14 @@ bool connectToWiFi(const char* ssid, const char* password) {
     return false;
 }
 
-void setupMQTT(const char* id, const char* broker, int port) {
+PubSubClient& setupMQTT(const char* id, const char* address, int port) {
     deviceId = String(id);
     stateTopic = String(TOPICPREFIX) + deviceId + "/state";
     actionTopic = String(TOPICPREFIX) + deviceId + "/action";
     
-    mqttClient.setServer(broker, port);
+    mqttClient.setServer(address, port);
     mqttClient.setCallback(mqttCallback);
+    return mqttClient;
 }
 
 bool connectToMQTT() {
@@ -104,18 +98,4 @@ bool publishState(const char* state) {
         return false;
     }
     return mqttClient.publish(stateTopic.c_str(), state, true);  // retained
-}
-
-void handleMQTTEvent(void* pvParameters) {
-    esp_task_wdt_add(NULL);
-    
-    for (;;) {
-        if (!mqttClient.connected()) {
-            connectToMQTT();
-        }
-        mqttClient.loop();
-        
-        esp_task_wdt_reset();
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
 }
