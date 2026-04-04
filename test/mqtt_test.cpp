@@ -3,26 +3,7 @@
 
 #include "mqtt.h"
 
-volatile bool isOpen = false;
-
-void testSetupMQTT();
-void testConnectToMQTT();
-void testPublishState();
-void mqttCallBackTest();
-
-void setUp() {}
-void tearDown() {}
-
-int main( int argc, char **argv) {
-    UNITY_BEGIN();
-
-    RUN_TEST(testSetupMQTT);
-    RUN_TEST(testConnectToMQTT);
-    RUN_TEST(testPublishState);
-    RUN_TEST(mqttCallBackTest);
-
-    return UNITY_END();
-}
+extern volatile bool isOpen; // door state defined in door_test.cpp
 
 void testSetupMQTT() {
     const char* device_id = "test-device";
@@ -73,6 +54,4 @@ void mqttCallBackTest() {
     char lockPayload[] = "lock";
     mqttCallback(topic, reinterpret_cast<byte*>(lockPayload), strlen(lockPayload));
     TEST_ASSERT_FALSE(isOpen);
-
-
 }

@@ -1,16 +1,11 @@
 #ifndef MQTT_H
 #define MQTT_H
 
+#include <WiFi.h>
 #include <PubSubClient.h>
 
-const String TOPICPREFIX = "blackdoor/";
-
-WiFiClient wifiClient;
-PubSubClient mqttClient(wifiClient);
-
-static String deviceId;
-static String stateTopic;
-static String actionTopic;
+extern WiFiClient wifiClient;
+extern PubSubClient mqttClient;
 
 void mqttCallback(char* topic, byte* payload, unsigned int length);
 bool connectToWiFi(const char* ssid, const char* password);
