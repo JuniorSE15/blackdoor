@@ -16,26 +16,6 @@ void tearDown() {
     digitalWrite(RELAY_PIN, HIGH);
 }
 
-int main(int argc, char **argv) {
-    UNITY_BEGIN();
-
-    // Configuration tests
-    RUN_TEST(test_setup_config_initializes_pins);
-
-    // Door state integration tests
-    RUN_TEST(test_door_initial_state_is_locked);
-    RUN_TEST(test_unlock_sets_correct_state);
-    RUN_TEST(test_lock_sets_correct_state);
-    RUN_TEST(test_unlock_then_auto_lock_sequence);
-
-    // Edge case tests
-    RUN_TEST(test_multiple_unlock_attempts);
-    RUN_TEST(test_multiple_lock_attempts);
-    RUN_TEST(test_rapid_lock_unlock_cycles);
-
-    return UNITY_END();
-}
-
 // ------------- Configuration Tests -------------
 
 void test_setup_config_initializes_pins() {
@@ -135,4 +115,25 @@ void mqttlockPublishTest() {
     
     bool result = publishState("locked");
     TEST_ASSERT_TRUE(result);
+}
+
+// ------------- Main Test Runner -------------
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+
+    // Configuration tests
+    RUN_TEST(test_setup_config_initializes_pins);
+
+    // Door state integration tests
+    RUN_TEST(test_door_initial_state_is_locked);
+    RUN_TEST(test_unlock_sets_correct_state);
+    RUN_TEST(test_lock_sets_correct_state);
+    RUN_TEST(test_unlock_then_auto_lock_sequence);
+
+    // Edge case tests
+    RUN_TEST(test_multiple_unlock_attempts);
+    RUN_TEST(test_multiple_lock_attempts);
+    RUN_TEST(test_rapid_lock_unlock_cycles);
+
+    return UNITY_END();
 }
