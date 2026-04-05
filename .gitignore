@@ -11,3 +11,4 @@ build
 
 venv
 .python-version
+docker-compose.yml

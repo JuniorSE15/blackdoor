@@ -3,6 +3,15 @@
 #include "esp_task_wdt.h"
 #include <WiFi.h>
 
+const String TOPICPREFIX = "blackdoor/";
+
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
+
+static String deviceId;
+static String stateTopic;
+static String actionTopic;
+
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
     String message;
     for (unsigned int i = 0; i < length; i++) {

@@ -5,10 +5,16 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
+ 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
+    services:
+      mosquitto:
+        image: eclipse-mosquitto:1.6.15
+        ports:
+          - 1883:1883
 
     steps:
       - uses: actions/checkout@v6
@@ -26,3 +32,6 @@ jobs:
 
       - name: Build firmware (compile only)
         run: pio run -e esp32dev
+
+      - name: Run tests
+        run: pio test -e esp32dev

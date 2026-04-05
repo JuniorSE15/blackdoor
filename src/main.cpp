@@ -10,6 +10,7 @@
 
 #define WDT_TIMEOUT_SEC 10
 
+#ifndef PIO_UNIT_TESTING
 volatile bool isOpen = false; 
 
 void setup()
@@ -50,3 +51,4 @@ void loop()
 
   esp_task_wdt_reset();
 }
+#endif
