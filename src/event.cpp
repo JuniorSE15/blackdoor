@@ -1,3 +1,4 @@
+#include "storage.h"
 #include "event.h"
 #include "rfid.h"
 #include "mqtt.h"
@@ -9,19 +10,30 @@ void triggerRelay(int state) {
 
 void handleRFIDEvent(void* pvParameters) {
     esp_task_wdt_add(NULL);
-    for (;;) {
-        String cardUID = readRFIDCard();
-
-        if (cardUID.length() > 0) {
-            Serial.print("Found NFC tag with UID: ");
-            Serial.println(cardUID);
-            // TODO: Implement logic to check if the cardUID is authorized to unlock the door
-            isOpen = true;
-            triggerRelay(LOW);
-        }
-        esp_task_wdt_reset();
-        vTaskDelay(pdMS_TO_TICKS(100));
+    if (isEnrollmentState) {
+        Serial.println("Enrollment mode active. stopping RFID event handler.");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        return;
     }
+        for (;;) {
+            String cardUID = readRFIDCard();
+
+            if (cardUID.length() > 0) {
+                Serial.print("Found NFC tag with UID: ");
+                Serial.println(cardUID);
+                
+                if (isCardAuthorized(cardUID)) {
+                    Serial.println("Card authorized. Unlocking door.");
+                    isOpen = true;
+                    triggerRelay(LOW);
+                } else {
+                    Serial.println("Card not authorized.");
+                }
+            }
+            esp_task_wdt_reset();
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+    vTaskDelete(NULL);
 }
 
 void handleMQTTEvent(void* pvParameters) {
@@ -36,13 +48,15 @@ void handleMQTTEvent(void* pvParameters) {
         // publish door state periodically
         if (isOpen) {
             publishState("unlocked");
+        } else if (isEnrollmentState) {
+            publishState("enrollment");
         } else {
             publishState("locked");
         }
-        
         esp_task_wdt_reset();
         vTaskDelay(pdMS_TO_TICKS(100));
     }
+    vTaskDelete(NULL);
 }
 
 void handleDoorEvent(void *pvParameters) {
@@ -64,5 +78,27 @@ void handleDoorEvent(void *pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(200));
     }
 
+    vTaskDelete(NULL);
+}
+
+
+void handleEnrollmentEvent(void* pvParameters) {
+    esp_task_wdt_add(NULL);
+    for (;;) {
+        if (isEnrollmentState) {
+            Serial.println("Enrollment mode active. Waiting for new RFID card...");
+            String newCardUID = readRFIDCard();
+            if (newCardUID.length() > 0) {
+                Serial.print("Enrolling new card with UID: ");
+                Serial.println(newCardUID);
+                // save it to nvs (eeprom)
+                saveCardUID(newCardUID);
+                isEnrollmentState = false;
+                Serial.println("Enrollment complete. Exiting enrollment mode.");
+            }
+        }
+        esp_task_wdt_reset();
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
     vTaskDelete(NULL);
 }

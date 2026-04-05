@@ -12,6 +12,14 @@
 
 #ifndef PIO_UNIT_TESTING
 volatile bool isOpen = false; 
+volatile bool isEnrollmentState = false;
+
+void watchdogTask(void* pvParameters) {
+    for (;;) {
+        esp_task_wdt_reset();
+        vTaskDelay(pdMS_TO_TICKS(WDT_TIMEOUT_SEC * 1000 / 2)); // Reset WDT every half of the timeout
+    }
+}
 
 void setup()
 {
@@ -23,7 +31,7 @@ void setup()
 
   setupConfig();
   // HIGH means relay is off (door locked), LOW means relay is on (door unlocked)
-  wakeUpHardware(&isOpen);
+  wakeUpHardware(&isOpen, &isEnrollmentState);
 
   setupRFID();
 
@@ -41,6 +49,9 @@ void setup()
   xTaskCreate(handleRFIDEvent, "RFID Event Handler", 4096, NULL, 1, NULL);
   xTaskCreate(handleDoorEvent, "Door Event Handler", 4096, NULL, 1, NULL);
   xTaskCreate(handleMQTTEvent, "MQTT Event Handler", 4096, NULL, 1, NULL);
+  xTaskCreate(handleEnrollmentEvent, "Enrollment Event Handler", 4096, NULL, 1, NULL);
+
+  xTaskCreate(watchdogTask, "Watchdog Task", 2048, NULL, 1, NULL);
 }
 
 void loop()

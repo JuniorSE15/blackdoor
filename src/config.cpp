@@ -23,9 +23,9 @@ void setupConfig()
     nfc.SAMConfig();
 }
 
-void wakeUpHardware(volatile bool *isOpen)
+void wakeUpHardware(volatile bool *isOpen, volatile bool *isEnrollmentState)
 { 
-    // TODO: implement
     digitalWrite(RELAY_PIN, HIGH);
     *isOpen = false;
+    *isEnrollmentState = false;
 }

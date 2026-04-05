@@ -37,6 +37,14 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
             publishState("locked");
         }
     }
+
+    if (message == "enroll") {
+        isEnrollmentState = true;
+        Serial.println("MQTT: Enrollment mode enabled");
+    } else if (message == "unenroll") {
+        isEnrollmentState = false;
+        Serial.println("MQTT: Enrollment mode disabled");
+    }
 }
 
 bool connectToWiFi(const char* ssid, const char* password) {
