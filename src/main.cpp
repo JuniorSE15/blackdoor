@@ -6,6 +6,7 @@
 #include "config.h"
 #include "event.h"
 #include "rfid.h"
+#include "keypad.h"
 #include "mqtt.h"
 #include "esp_task_wdt.h"
 
@@ -40,6 +41,7 @@ void setup()
 
   setupConfig();
   wakeUpHardware(&isOpen);
+  setupKeypad();
 
   Wire1.begin(I2C_SLAVE_ADDR, STELLA_SDA_PIN, STELLA_SCL_PIN, 100000);
   Wire1.onReceive(receiveEvent);
@@ -60,6 +62,7 @@ void setup()
   // }
 
   xTaskCreate(handleRFIDEvent, "RFID Event Handler", 4096, NULL, 1, NULL);
+  xTaskCreate(handleKeypadEvent, "Keypad Event Handler", 4096, NULL, 1, NULL);
   xTaskCreate(handleDoorEvent, "Door Event Handler", 4096, NULL, 1, NULL);
   // xTaskCreate(handleMQTTEvent, "MQTT Event Handler", 4096, NULL, 1, NULL);
 }

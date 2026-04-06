@@ -1,5 +1,6 @@
 #include "event.h"
 #include "rfid.h"
+#include "keypad.h"
 #include "mqtt.h"
 #include "esp_task_wdt.h"
 
@@ -62,6 +63,24 @@ void handleDoorEvent(void *pvParameters) {
         }
         esp_task_wdt_reset();
         vTaskDelay(pdMS_TO_TICKS(200));
+    }
+
+    vTaskDelete(NULL);
+}
+
+void handleKeypadEvent(void *pvParameters) {
+    esp_task_wdt_add(NULL);
+
+    for (;;) {
+        char key = pollKeypadChar();
+
+        if (key != '\0') {
+            Serial.print("[KEYPAD] Key pressed: ");
+            Serial.println(key);
+        }
+
+        esp_task_wdt_reset();
+        vTaskDelay(pdMS_TO_TICKS(40));
     }
 
     vTaskDelete(NULL);

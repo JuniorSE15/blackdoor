@@ -12,5 +12,6 @@ void triggerRelay(int state);
 void handleRFIDEvent(void* pvParameters);
 void handleDoorEvent(void* pvParameters);
 void handleMQTTEvent(void* pvParameters);
+void handleKeypadEvent(void* pvParameters);
 
 #endif // EVENT_H
