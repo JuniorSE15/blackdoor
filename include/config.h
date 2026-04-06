@@ -9,7 +9,7 @@
 #define RFID_DATA_PIN 21 // GPIO pin for RFID sensor
 #define RFID_CLK_PIN 22  // GPIO pin for RFID sensor
 
-#define REED_SWITCH_PIN 5 // GPIO pin for reed switch
+#define REED_SWITCH_PIN 15 // GPIO pin for reed switch
 #define LED_PIN 13
 #define TOUCHPAD_PIN 12
 

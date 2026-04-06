@@ -48,7 +48,9 @@ String readRFIDCard()
     bool success = nfc.readPassiveTargetID(
         PN532_MIFARE_ISO14443A,
         uid,
-        &uidLength);
+        &uidLength,
+        100 
+    );
 
     if (success)
     {

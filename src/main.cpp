@@ -48,20 +48,20 @@ void setup()
   
   setupRFID();
 
-  const char* wifi_ssid = getenv("WIFI_SSID");
-  const char* wifi_password = getenv("WIFI_PASSWORD");
-  const char* mqtt_broker = getenv("MQTT_BROKER");
-  const int mqtt_port = 1883;
-  const char* device_id = getenv("DEVICE_ID");
+  // const char* wifi_ssid = getenv("WIFI_SSID");
+  // const char* wifi_password = getenv("WIFI_PASSWORD");
+  // const char* mqtt_broker = getenv("MQTT_BROKER");
+  // const int mqtt_port = 1883;
+  // const char* device_id = getenv("DEVICE_ID");
 
-  if (connectToWiFi(wifi_ssid, wifi_password)) {
-    setupMQTT(device_id, mqtt_broker, mqtt_port);
-    connectToMQTT();
-  }
+  // if (connectToWiFi(wifi_ssid, wifi_password)) {
+  //   setupMQTT(device_id, mqtt_broker, mqtt_port);
+  //   connectToMQTT();
+  // }
 
   xTaskCreate(handleRFIDEvent, "RFID Event Handler", 4096, NULL, 1, NULL);
   xTaskCreate(handleDoorEvent, "Door Event Handler", 4096, NULL, 1, NULL);
-  xTaskCreate(handleMQTTEvent, "MQTT Event Handler", 4096, NULL, 1, NULL);
+  // xTaskCreate(handleMQTTEvent, "MQTT Event Handler", 4096, NULL, 1, NULL);
 }
 
 void loop()
