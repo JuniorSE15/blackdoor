@@ -7,32 +7,28 @@
 #define SDA_PIN 21
 #define SCL_PIN 22
 
-// nfc object is defined in config.cpp
-
 void setupRFID()
 {
     Serial.println("=================================");
     Serial.println("   ESP32 + PN532 (I2C MODE)      ");
     Serial.println("=================================");
 
-    // Start I2C
     Wire.begin(SDA_PIN, SCL_PIN);
     delay(1000);
 
-    // Initialize PN532
     nfc.begin();
 
     uint32_t versiondata = nfc.getFirmwareVersion();
 
     if (!versiondata)
     {
-        Serial.println("❌ PN532 not found (I2C)");
-        Serial.println("👉 Check wiring & switch mode");
+        Serial.println("[+] PN532 not found (I2C)");
+        Serial.println("[+] Check wiring & switch mode");
         while (1)
             ;
     }
 
-    Serial.println("✅ PN532 detected!");
+    Serial.println("[+] PN532 detected!");
     Serial.print("Firmware: ");
     Serial.print((versiondata >> 16) & 0xFF, DEC);
     Serial.print(".");
@@ -40,7 +36,7 @@ void setupRFID()
 
     nfc.SAMConfig();
 
-    Serial.println("Waiting for NFC card...");
+    Serial.println("[+] Waiting for NFC card...");
     Serial.println("---------------------------------");
 }
 
