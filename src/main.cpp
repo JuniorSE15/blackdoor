@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <stdio.h>
+#include <Wire.h> 
 #include <WiFi.h>
 
 #include "config.h"
@@ -8,10 +9,26 @@
 #include "mqtt.h"
 #include "esp_task_wdt.h"
 
+// I2C settings for Stella Slave
+#define I2C_SLAVE_ADDR 0x08
+#define STELLA_SDA_PIN 32  // SDA Blue wire 
+#define STELLA_SCL_PIN 33  // SCL Yellow wire 
+
 #define WDT_TIMEOUT_SEC 10
 
 #ifndef PIO_UNIT_TESTING
 volatile bool isOpen = false; 
+volatile bool stellaUnlockRequested = false;
+
+// I2C receive event handler for Wire1 (Stella Slave)
+void receiveEvent(int howMany) {
+    while (Wire1.available()) {
+        char command = Wire1.read();
+        if (command == 0x01) {
+            stellaUnlockRequested = true;
+        }
+    }
+}
 
 void setup()
 {
@@ -22,9 +39,13 @@ void setup()
   esp_task_wdt_add(NULL);
 
   setupConfig();
-  // HIGH means relay is off (door locked), LOW means relay is on (door unlocked)
   wakeUpHardware(&isOpen);
 
+  Wire1.begin(I2C_SLAVE_ADDR, STELLA_SDA_PIN, STELLA_SCL_PIN, 100000);
+  Wire1.onReceive(receiveEvent);
+  Serial.println("Blackdoor System Ready.");
+  Serial.println("RFID Master on Wire (21/22) | Stella Slave on Wire1 (32/33)");
+  
   setupRFID();
 
   const char* wifi_ssid = getenv("WIFI_SSID");
@@ -45,6 +66,30 @@ void setup()
 
 void loop()
 {
+  touch_value_t touchValue = touchRead(TOUCH_PIN);
+
+  if (touchValue < 40)
+  {
+    if (!isOpen)
+    {
+      isOpen = true;
+      digitalWrite(RELAY_PIN, HIGH); 
+      Serial.println("[HARDWARE] Touch detected — door unlocked!");
+    }
+  }
+
+  // Stella UWB Logic
+  if (stellaUnlockRequested) 
+  {
+    stellaUnlockRequested = false; 
+    
+    if (!isOpen)
+    {
+      isOpen = true;
+      digitalWrite(RELAY_PIN, HIGH); 
+      Serial.println("[STELLA] UWB threshold met — door unlocked!");
+    }
+  }
   Serial.print("Door State: ");
   Serial.println(isOpen ? "OPEN" : "CLOSED");
   delay(500);

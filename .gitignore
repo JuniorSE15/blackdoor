@@ -11,4 +11,5 @@ build
 
 venv
 .python-version
+.DS_Store
 docker-compose.yml
