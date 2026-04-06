@@ -59,9 +59,10 @@ void setup()
     connectToMQTT();
   }
 
-  xTaskCreate(handleRFIDEvent, "RFID Event Handler", 4096, NULL, 1, NULL);
-  xTaskCreate(handleDoorEvent, "Door Event Handler", 4096, NULL, 1, NULL);
-  xTaskCreate(handleMQTTEvent, "MQTT Event Handler", 4096, NULL, 1, NULL);
+  // Task priorities: higher number = higher priority; MQTT lowest (network I/O can be slow)
+  xTaskCreate(handleDoorEvent, "Door Event Handler", 4096, NULL, 3, NULL);      // Highest: door safety
+  xTaskCreate(handleRFIDEvent, "RFID Event Handler", 4096, NULL, 2, NULL);      // Medium: sensor input
+  xTaskCreate(handleMQTTEvent, "MQTT Event Handler", 4096, NULL, 1, NULL);      // Lowest: network I/O
 }
 
 void loop()

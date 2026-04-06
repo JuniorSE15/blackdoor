@@ -45,10 +45,12 @@ String readRFIDCard()
     uint8_t uid[7];
     uint8_t uidLength;
 
+    // Use short timeout (50ms instead of blocking indefinitely)
     bool success = nfc.readPassiveTargetID(
         PN532_MIFARE_ISO14443A,
         uid,
-        &uidLength);
+        &uidLength,
+        50);  // Non-blocking: timeout after 50ms
 
     if (success)
     {
