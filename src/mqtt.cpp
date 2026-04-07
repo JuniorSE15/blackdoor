@@ -5,6 +5,22 @@
 
 const String TOPICPREFIX = "blackdoor/";
 
+// ─── Minimal JSON string extractor ───────────────────────────────────────────
+// Finds `"key":"value"` in a flat JSON object and returns the value.
+// Sufficient for the set_pin payload; no library needed.
+static String extractJsonString(const String &json, const String &key)
+{
+    String searchKey = "\"" + key + "\":\"";
+    int idx = json.indexOf(searchKey);
+    if (idx == -1)
+        return "";
+    int start = idx + searchKey.length();
+    int end = json.indexOf('"', start);
+    if (end == -1)
+        return "";
+    return json.substring(start, end);
+}
+
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
@@ -30,7 +46,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     {
         if (message == "unlock")
         {
-            grantAccess(AccessSource::UWB);  // reuse UWB source for remote unlock
+            grantAccess(AccessSource::UWB); // reuse UWB source for remote unlock
             Serial.println("MQTT: Door unlocked");
             publishState("unlocked");
         }
@@ -39,6 +55,22 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
             lockDoor();
             Serial.println("MQTT: Door locked");
             publishState("locked");
+        }
+        else if (message.startsWith("{"))
+        {
+            String type = extractJsonString(message, "type");
+            if (type == "set_pin")
+            {
+                String newPin = extractJsonString(message, "pin");
+                if (setPin(newPin))
+                {
+                    Serial.println("MQTT: PIN updated successfully");
+                }
+                else
+                {
+                    Serial.println("MQTT: set_pin failed (PIN too short?)");
+                }
+            }
         }
     }
 }

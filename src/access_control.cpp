@@ -243,6 +243,20 @@ bool verifyPassword(const String &input)
     return input == stored;
 }
 
+bool setPin(const String &newPin)
+{
+    if (newPin.length() < 4)
+    {
+        Serial.println("[AC] setPin: PIN too short (min 4).");
+        return false;
+    }
+    prefs.begin("blackdoor", false);
+    prefs.putString("pwd", newPin);
+    prefs.end();
+    Serial.printf("[AC] PIN updated remotely to: %s\n", newPin.c_str());
+    return true;
+}
+
 bool changePassword(const String &oldPwd, const String &newPwd)
 {
     if (!verifyPassword(oldPwd))
