@@ -22,6 +22,11 @@
 
 #define DOOR_UNLOCK_TIME 8000 // 8 seconds to hold the door open
 
+typedef struct {
+    const char* username;
+    const char* password;
+} Mqttparams_t;
+
 extern Adafruit_PN532 nfc; // Declare as extern (defined in rfid.cpp)
 
 void setupConfig();

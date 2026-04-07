@@ -11,20 +11,6 @@
 #include "mqtt.h"
 #include "esp_task_wdt.h"
 
-// Fallback defaults — override in platformio.ini build_flags
-// #ifndef WIFI_SSID
-//   #define WIFI_SSID "your_wifi_ssid"
-// #endif
-// #ifndef WIFI_PASSWORD
-//   #define WIFI_PASSWORD "your_wifi_password"
-// #endif
-// #ifndef MQTT_BROKER
-//   #define MQTT_BROKER "192.168.1.100"
-// #endif
-// #ifndef DEVICE_ID
-//   #define DEVICE_ID "door-001"
-// #endif
-
 // I2C settings for Stella UWB slave
 #define I2C_SLAVE_ADDR 0x08
 #define STELLA_SDA_PIN 32
@@ -51,8 +37,8 @@ void setup()
     Serial.begin(115200);
     delay(1000);
 
-    esp_task_wdt_init(WDT_TIMEOUT_SEC, true);
-    esp_task_wdt_add(NULL);
+    // esp_task_wdt_init(WDT_TIMEOUT_SEC, true);
+    // esp_task_wdt_add(NULL);
 
     setupConfig();
     setupAccessControl();   // Loads NVS cards + password, locks door.
@@ -65,16 +51,19 @@ void setup()
 
     setupRFID();
 
-    // if (connectToWiFi(WIFI_SSID, WIFI_PASSWORD)) {
-    //     setupMQTT(DEVICE_ID, MQTT_BROKER, 1883);
-    //     connectToMQTT();
-    // }
+    if (connectToWiFi(WIFI_SSID, WIFI_PASSWORD)) {
+        setupMQTT(DEVICE_ID, MQTT_BROKER, 1883);
+        connectToMQTT(MQTT_USER, MQTT_PASSWORD);
+    }
+
+    static Mqttparams_t myArgs = {MQTT_USER, MQTT_PASSWORD};
 
     // Task priorities: higher number = higher priority.
     xTaskCreate(handleDoorEvent,   "Door Event Handler",   4096, NULL, 3, NULL);
     xTaskCreate(handleRFIDEvent,   "RFID Event Handler",   4096, NULL, 2, NULL);
     xTaskCreate(handleKeypadEvent, "Keypad Event Handler", 4096, NULL, 1, NULL);
-    // xTaskCreate(handleMQTTEvent,   "MQTT Event Handler",   4096, NULL, 1, NULL);
+    // parse in username and password
+    xTaskCreate(handleMQTTEvent,   "MQTT Event Handler",   4096, (void *)&myArgs, 1, NULL);
 }
 
 void loop()
@@ -97,7 +86,7 @@ void loop()
         }
     }
 
-    esp_task_wdt_reset();
+    // esp_task_wdt_reset();
     delay(500);
 }
 #endif

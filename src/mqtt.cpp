@@ -82,7 +82,7 @@ PubSubClient &setupMQTT(const char *id, const char *address, int port)
     return mqttClient;
 }
 
-bool connectToMQTT()
+bool connectToMQTT(const char *user, const char *password)
 {
     if (mqttClient.connected())
     {
@@ -93,7 +93,7 @@ bool connectToMQTT()
 
     String clientId = "blackdoor-" + deviceId;
 
-    if (mqttClient.connect(clientId.c_str()))
+    if (mqttClient.connect(clientId.c_str(), user, password))
     {
         Serial.println("connected");
 

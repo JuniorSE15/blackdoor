@@ -10,7 +10,7 @@ extern PubSubClient mqttClient;
 void mqttCallback(char* topic, byte* payload, unsigned int length);
 bool connectToWiFi(const char* ssid, const char* password);
 PubSubClient& setupMQTT(const char* id, const char* broker, int port);
-bool connectToMQTT();
+bool connectToMQTT(const char *user, const char *password);
 bool publishState(const char* state);
 
 #endif // MQTT_H

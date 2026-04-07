@@ -277,7 +277,7 @@ void handleKeypadEvent(void *pvParameters)
 // ─────────────────────────────────────────────────────────────────────────────
 void handleMQTTEvent(void *pvParameters)
 {
-    esp_task_wdt_add(NULL);
+    // esp_task_wdt_add(NULL);
 
     unsigned long lastPublish = millis();
     const unsigned long PUB_MS = 5000;
@@ -286,7 +286,7 @@ void handleMQTTEvent(void *pvParameters)
     {
         if (!mqttClient.connected())
         {
-            connectToMQTT();
+            connectToMQTT(MQTT_USER, MQTT_PASSWORD);
         }
         mqttClient.loop();
 
@@ -296,7 +296,7 @@ void handleMQTTEvent(void *pvParameters)
             publishState(isOpen ? "unlocked" : "locked");
         }
 
-        esp_task_wdt_reset();
+        // esp_task_wdt_reset();
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
