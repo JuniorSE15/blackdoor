@@ -13,6 +13,10 @@
 //   ADMIN_MODE  — next card scanned: add if new, revoke if known;
 //                 re-scan master to exit
 //   Others      — ignore RFID input
+//
+// Card detection:
+//   - readRFIDCard() only returns a UID when a NEW card is detected
+//   - Holding the card will not trigger multiple reads
 // ─────────────────────────────────────────────────────────────────────────────
 void handleRFIDEvent(void *pvParameters)
 {
@@ -20,7 +24,6 @@ void handleRFIDEvent(void *pvParameters)
 
     unsigned long lastRead = millis();
     const unsigned long READ_MS = 200;
-    String lastProcessedUID = "";  // Track the last UID we processed
 
     for (;;)
     {
@@ -29,10 +32,9 @@ void handleRFIDEvent(void *pvParameters)
             lastRead = millis();
             String uid = readRFIDCard();
 
-            // Only process if a card is detected AND it's different from the last one
-            if (uid.length() > 0 && uid != lastProcessedUID)
+            // readRFIDCard() only returns non-empty string for NEW card detections
+            if (uid.length() > 0)
             {
-                lastProcessedUID = uid;  // Remember this UID
                 LockState st = getLockState();
 
                 if (isMasterCard(uid))
@@ -75,11 +77,6 @@ void handleRFIDEvent(void *pvParameters)
                     }
                 }
                 // Ignore RFID when UNLOCKED or PASSWORD_CHANGE_MODE.
-            }
-            else if (uid.length() == 0)
-            {
-                // Card was removed, reset the last processed UID
-                lastProcessedUID = "";
             }
         }
 

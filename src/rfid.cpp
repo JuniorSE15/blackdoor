@@ -7,6 +7,10 @@
 #define SDA_PIN 21
 #define SCL_PIN 22
 
+// Track the previously detected card to avoid duplicate reads
+static String lastDetectedUID = "";
+static unsigned long lastCardRemovalTime = 0;
+
 void setupRFID()
 {
     Serial.println("=================================");
@@ -45,7 +49,7 @@ String readRFIDCard()
     uint8_t uid[7];
     uint8_t uidLength;
 
-    // Use short timeout (50ms instead of blocking indefinitely)
+    // Use short timeout (100ms)
     bool success = nfc.readPassiveTargetID(
         PN532_MIFARE_ISO14443A,
         uid,
@@ -55,33 +59,50 @@ String readRFIDCard()
 
     if (success)
     {
-        Serial.println("📱 NFC Card Detected!");
-
         // Build UID string
         String uidString = "";
-        Serial.print("UID: ");
         for (uint8_t i = 0; i < uidLength; i++)
         {
             if (uid[i] < 0x10)
-            {
                 uidString += "0";
-                Serial.print("0");
-            }
             uidString += String(uid[i], HEX);
-
-            Serial.print("0x");
-            if (uid[i] < 0x10)
-                Serial.print("0");
-            Serial.print(uid[i], HEX);
-            Serial.print(" ");
         }
-        Serial.println();
-        Serial.println("---------------------------------");
 
-        return uidString;
+        // Only return the UID if it's a NEW card (different from last detected)
+        if (uidString != lastDetectedUID)
+        {
+            lastDetectedUID = uidString;
+            lastCardRemovalTime = millis();
+
+            Serial.println("📱 NFC Card Detected!");
+            Serial.print("UID: ");
+            for (uint8_t i = 0; i < uidLength; i++)
+            {
+                Serial.print("0x");
+                if (uid[i] < 0x10)
+                    Serial.print("0");
+                Serial.print(uid[i], HEX);
+                Serial.print(" ");
+            }
+            Serial.println();
+            Serial.println("---------------------------------");
+
+            return uidString;
+        }
+
+        // Same card is still in field, return empty string
+        return "";
     }
 
-    return ""; // No card detected
+    // No card detected
+    if (lastDetectedUID.length() > 0)
+    {
+        // Card was just removed
+        lastDetectedUID = "";
+        lastCardRemovalTime = millis();
+    }
+
+    return "";
 }
 
 bool isCardPresent()
@@ -96,3 +117,4 @@ bool isCardPresent()
         100 // Timeout in ms
     );
 }
+
