@@ -56,12 +56,14 @@ void handleRFIDEvent(void *pvParameters)
                     {
                         Serial.println("[RFID] Known card — revoking.");
                         revokeCard(uid);
+                        publishCards(); // sync updated list to backend DB
                     }
                     else
                     {
                         Serial.println("[RFID] New card — adding.");
                         addCard(uid);
                         buzz(1000, 100); // Beep on card add/revoke
+                        publishCards(); // sync updated list to backend DB
                     }
                 }
                 else if (st == LockState::LOCKED)
