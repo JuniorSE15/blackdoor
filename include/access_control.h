@@ -48,6 +48,8 @@ bool isMasterCard(const String& uid);       // Compare against hardcoded master 
 bool isAuthorizedCard(const String& uid);   // Check NVS card list
 bool addCard(const String& uid);            // Returns false if full or duplicate
 bool revokeCard(const String& uid);         // Returns false if not found
+int  getCardCount();                        // Number of authorized cards currently stored
+String getCardAt(int index);               // UID at given index (empty string if out of range)
 
 // ─── Password management (NVS-backed) ───────────────────────────────────────
 bool verifyPassword(const String& input);

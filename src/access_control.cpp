@@ -234,6 +234,18 @@ bool revokeCard(const String &uid)
     return false;
 }
 
+int getCardCount()
+{
+    return cardCount;
+}
+
+String getCardAt(int index)
+{
+    if (index < 0 || index >= cardCount)
+        return "";
+    return cardList[index];
+}
+
 // ─── Password management ─────────────────────────────────────────────────────
 bool verifyPassword(const String &input)
 {
