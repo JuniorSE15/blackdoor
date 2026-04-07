@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <stdio.h>
-#include <Wire.h> 
+#include <Wire.h>
 #include <WiFi.h>
 
 #include "config.h"
@@ -8,6 +8,20 @@
 #include "rfid.h"
 #include "mqtt.h"
 #include "esp_task_wdt.h"
+
+// Fallback defaults — override in platformio.ini build_flags
+#ifndef WIFI_SSID
+  #define WIFI_SSID "your_wifi_ssid"
+#endif
+#ifndef WIFI_PASSWORD
+  #define WIFI_PASSWORD "your_wifi_password"
+#endif
+#ifndef MQTT_BROKER
+  #define MQTT_BROKER "192.168.1.100"
+#endif
+#ifndef DEVICE_ID
+  #define DEVICE_ID "door-001"
+#endif
 
 // I2C settings for Stella Slave
 #define I2C_SLAVE_ADDR 0x08
@@ -48,14 +62,8 @@ void setup()
   
   setupRFID();
 
-  const char* wifi_ssid = getenv("WIFI_SSID");
-  const char* wifi_password = getenv("WIFI_PASSWORD");
-  const char* mqtt_broker = getenv("MQTT_BROKER");
-  const int mqtt_port = 1883;
-  const char* device_id = getenv("DEVICE_ID");
-
-  if (connectToWiFi(wifi_ssid, wifi_password)) {
-    setupMQTT(device_id, mqtt_broker, mqtt_port);
+  if (connectToWiFi(WIFI_SSID, WIFI_PASSWORD)) {
+    setupMQTT(DEVICE_ID, MQTT_BROKER, 1883);
     connectToMQTT();
   }
 
@@ -74,25 +82,27 @@ void loop()
     if (!isOpen)
     {
       isOpen = true;
-      digitalWrite(RELAY_PIN, HIGH); 
+      triggerRelay(LOW);  // LOW = relay energised = door unlocked
+      publishState("unlocked");
       Serial.println("[HARDWARE] Touch detected — door unlocked!");
     }
   }
 
   // Stella UWB Logic
-  if (stellaUnlockRequested) 
+  if (stellaUnlockRequested)
   {
-    stellaUnlockRequested = false; 
-    
+    stellaUnlockRequested = false;
+
     if (!isOpen)
     {
       isOpen = true;
-      digitalWrite(RELAY_PIN, HIGH); 
+      triggerRelay(LOW);  // LOW = relay energised = door unlocked
+      publishState("unlocked");
       Serial.println("[STELLA] UWB threshold met — door unlocked!");
     }
   }
   Serial.print("Door State: ");
-  Serial.println(isOpen ? "OPEN" : "CLOSED");
+  Serial.println(isOpen ? "UNLOCKED" : "LOCKED");
   delay(500);
 
   esp_task_wdt_reset();
