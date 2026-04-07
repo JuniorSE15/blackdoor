@@ -280,7 +280,7 @@ void handleMQTTEvent(void *pvParameters)
     // esp_task_wdt_add(NULL);
 
     unsigned long lastPublish = millis();
-    const unsigned long PUB_MS = 5000;
+    const unsigned long PUB_MS = 1000;
 
     for (;;)
     {

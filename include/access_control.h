@@ -52,3 +52,4 @@ bool revokeCard(const String& uid);         // Returns false if not found
 // ─── Password management (NVS-backed) ───────────────────────────────────────
 bool verifyPassword(const String& input);
 bool changePassword(const String& oldPwd, const String& newPwd); // min 4 digits
+bool setPin(const String& newPin); // Privileged: bypasses old-pin check (use for remote commands)
