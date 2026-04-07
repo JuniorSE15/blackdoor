@@ -50,7 +50,8 @@ String readRFIDCard()
         PN532_MIFARE_ISO14443A,
         uid,
         &uidLength,
-        50);  // Non-blocking: timeout after 50ms
+        100 
+    );
 
     if (success)
     {

@@ -6,6 +6,7 @@
 #include "config.h"
 #include "event.h"
 #include "rfid.h"
+#include "keypad.h"
 #include "mqtt.h"
 #include "esp_task_wdt.h"
 
@@ -54,6 +55,7 @@ void setup()
 
   setupConfig();
   wakeUpHardware(&isOpen);
+  setupKeypad();
 
   Wire1.begin(I2C_SLAVE_ADDR, STELLA_SDA_PIN, STELLA_SCL_PIN, 100000);
   Wire1.onReceive(receiveEvent);
@@ -62,11 +64,25 @@ void setup()
   
   setupRFID();
 
+  // const char* wifi_ssid = getenv("WIFI_SSID");
+  // const char* wifi_password = getenv("WIFI_PASSWORD");
+  // const char* mqtt_broker = getenv("MQTT_BROKER");
+  // const int mqtt_port = 1883;
+  // const char* device_id = getenv("DEVICE_ID");
+
+  // if (connectToWiFi(wifi_ssid, wifi_password)) {
+  //   setupMQTT(device_id, mqtt_broker, mqtt_port);
+  //   connectToMQTT();
+  // }
   if (connectToWiFi(WIFI_SSID, WIFI_PASSWORD)) {
     setupMQTT(DEVICE_ID, MQTT_BROKER, 1883);
     connectToMQTT();
   }
 
+  xTaskCreate(handleRFIDEvent, "RFID Event Handler", 4096, NULL, 1, NULL);
+  xTaskCreate(handleKeypadEvent, "Keypad Event Handler", 4096, NULL, 1, NULL);
+  xTaskCreate(handleDoorEvent, "Door Event Handler", 4096, NULL, 1, NULL);
+  // xTaskCreate(handleMQTTEvent, "MQTT Event Handler", 4096, NULL, 1, NULL);
   // Task priorities: higher number = higher priority; MQTT lowest (network I/O can be slow)
   xTaskCreate(handleDoorEvent, "Door Event Handler", 4096, NULL, 3, NULL);      // Highest: door safety
   xTaskCreate(handleRFIDEvent, "RFID Event Handler", 4096, NULL, 2, NULL);      // Medium: sensor input
