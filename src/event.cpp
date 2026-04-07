@@ -280,7 +280,7 @@ void handleMQTTEvent(void *pvParameters)
     // esp_task_wdt_add(NULL);
 
     unsigned long lastPublish = millis();
-    const unsigned long PUB_MS = 5000;
+    const unsigned long PUB_MS = 1000;
 
     for (;;)
     {
@@ -290,6 +290,7 @@ void handleMQTTEvent(void *pvParameters)
         }
         mqttClient.loop();
 
+        // Publish heartbeat every PUB_MS milliseconds.
         if (millis() - lastPublish >= PUB_MS)
         {
             lastPublish = millis();
