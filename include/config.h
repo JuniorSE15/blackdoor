@@ -5,7 +5,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define RELAY_PIN 26     // GPIO pin for locking mechanism
+#define RELAY_PIN 26 // GPIO pin for locking mechanism
+
 #define RFID_DATA_PIN 21 // GPIO pin for RFID sensor
 #define RFID_CLK_PIN 22  // GPIO pin for RFID sensor
 
@@ -25,5 +26,6 @@ extern Adafruit_PN532 nfc; // Declare as extern (defined in rfid.cpp)
 
 void setupConfig();
 void wakeUpHardware(volatile bool *isOpen);
+void triggerRelay(int state); // LOW = unlock, HIGH = lock
 
 #endif // CONFIG_H

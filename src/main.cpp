@@ -5,37 +5,38 @@
 
 #include "config.h"
 #include "event.h"
+#include "access_control.h"
 #include "rfid.h"
 #include "keypad.h"
 #include "mqtt.h"
 #include "esp_task_wdt.h"
 
 // Fallback defaults — override in platformio.ini build_flags
-#ifndef WIFI_SSID
-  #define WIFI_SSID "your_wifi_ssid"
-#endif
-#ifndef WIFI_PASSWORD
-  #define WIFI_PASSWORD "your_wifi_password"
-#endif
-#ifndef MQTT_BROKER
-  #define MQTT_BROKER "192.168.1.100"
-#endif
-#ifndef DEVICE_ID
-  #define DEVICE_ID "door-001"
-#endif
+// #ifndef WIFI_SSID
+//   #define WIFI_SSID "your_wifi_ssid"
+// #endif
+// #ifndef WIFI_PASSWORD
+//   #define WIFI_PASSWORD "your_wifi_password"
+// #endif
+// #ifndef MQTT_BROKER
+//   #define MQTT_BROKER "192.168.1.100"
+// #endif
+// #ifndef DEVICE_ID
+//   #define DEVICE_ID "door-001"
+// #endif
 
-// I2C settings for Stella Slave
+// I2C settings for Stella UWB slave
 #define I2C_SLAVE_ADDR 0x08
-#define STELLA_SDA_PIN 32  // SDA Blue wire 
-#define STELLA_SCL_PIN 33  // SCL Yellow wire 
+#define STELLA_SDA_PIN 32
+#define STELLA_SCL_PIN 33
 
 #define WDT_TIMEOUT_SEC 10
 
 #ifndef PIO_UNIT_TESTING
-volatile bool isOpen = false; 
+// isOpen is defined in access_control.cpp; extern declared in access_control.h
+
 volatile bool stellaUnlockRequested = false;
 
-// I2C receive event handler for Wire1 (Stella Slave)
 void receiveEvent(int howMany) {
     while (Wire1.available()) {
         char command = Wire1.read();
@@ -47,80 +48,56 @@ void receiveEvent(int howMany) {
 
 void setup()
 {
-  Serial.begin(115200);
-  delay(1000);
+    Serial.begin(115200);
+    delay(1000);
 
-  esp_task_wdt_init(WDT_TIMEOUT_SEC, true);
-  esp_task_wdt_add(NULL);
+    esp_task_wdt_init(WDT_TIMEOUT_SEC, true);
+    esp_task_wdt_add(NULL);
 
-  setupConfig();
-  wakeUpHardware(&isOpen);
-  setupKeypad();
+    setupConfig();
+    setupAccessControl();   // Loads NVS cards + password, locks door.
+    setupKeypad();
 
-  Wire1.begin(I2C_SLAVE_ADDR, STELLA_SDA_PIN, STELLA_SCL_PIN, 100000);
-  Wire1.onReceive(receiveEvent);
-  Serial.println("Blackdoor System Ready.");
-  Serial.println("RFID Master on Wire (21/22) | Stella Slave on Wire1 (32/33)");
-  
-  setupRFID();
+    Wire1.begin(I2C_SLAVE_ADDR, STELLA_SDA_PIN, STELLA_SCL_PIN, 100000);
+    Wire1.onReceive(receiveEvent);
+    Serial.println("Blackdoor System Ready.");
+    Serial.println("RFID Master on Wire (21/22) | Stella Slave on Wire1 (32/33)");
 
-  // const char* wifi_ssid = getenv("WIFI_SSID");
-  // const char* wifi_password = getenv("WIFI_PASSWORD");
-  // const char* mqtt_broker = getenv("MQTT_BROKER");
-  // const int mqtt_port = 1883;
-  // const char* device_id = getenv("DEVICE_ID");
+    setupRFID();
 
-  // if (connectToWiFi(wifi_ssid, wifi_password)) {
-  //   setupMQTT(device_id, mqtt_broker, mqtt_port);
-  //   connectToMQTT();
-  // }
-  if (connectToWiFi(WIFI_SSID, WIFI_PASSWORD)) {
-    setupMQTT(DEVICE_ID, MQTT_BROKER, 1883);
-    connectToMQTT();
-  }
+    // if (connectToWiFi(WIFI_SSID, WIFI_PASSWORD)) {
+    //     setupMQTT(DEVICE_ID, MQTT_BROKER, 1883);
+    //     connectToMQTT();
+    // }
 
-  xTaskCreate(handleRFIDEvent, "RFID Event Handler", 4096, NULL, 1, NULL);
-  xTaskCreate(handleKeypadEvent, "Keypad Event Handler", 4096, NULL, 1, NULL);
-  xTaskCreate(handleDoorEvent, "Door Event Handler", 4096, NULL, 1, NULL);
-  // xTaskCreate(handleMQTTEvent, "MQTT Event Handler", 4096, NULL, 1, NULL);
-  // Task priorities: higher number = higher priority; MQTT lowest (network I/O can be slow)
-  xTaskCreate(handleDoorEvent, "Door Event Handler", 4096, NULL, 3, NULL);      // Highest: door safety
-  xTaskCreate(handleRFIDEvent, "RFID Event Handler", 4096, NULL, 2, NULL);      // Medium: sensor input
-  xTaskCreate(handleMQTTEvent, "MQTT Event Handler", 4096, NULL, 1, NULL);      // Lowest: network I/O
+    // Task priorities: higher number = higher priority.
+    xTaskCreate(handleDoorEvent,   "Door Event Handler",   4096, NULL, 3, NULL);
+    xTaskCreate(handleRFIDEvent,   "RFID Event Handler",   4096, NULL, 2, NULL);
+    xTaskCreate(handleKeypadEvent, "Keypad Event Handler", 4096, NULL, 1, NULL);
+    // xTaskCreate(handleMQTTEvent,   "MQTT Event Handler",   4096, NULL, 1, NULL);
 }
 
 void loop()
 {
-  touch_value_t touchValue = touchRead(TOUCH_PIN);
-
-  if (touchValue < 40)
-  {
-    if (!isOpen)
-    {
-      isOpen = true;
-      triggerRelay(LOW);  // LOW = relay energised = door unlocked
-      publishState("unlocked");
-      Serial.println("[HARDWARE] Touch detected — door unlocked!");
+    // ── Touch sensor (GPIO 12) ────────────────────────────────────────────
+    touch_value_t touchValue = touchRead(TOUCH_PIN);
+    if (touchValue < 40 && getLockState() == LockState::LOCKED) {
+        Serial.println("[HARDWARE] Touch detected — unlocking!");
+        grantAccess(AccessSource::TOUCH);
+        publishState("unlocked");
     }
-  }
 
-  // Stella UWB Logic
-  if (stellaUnlockRequested)
-  {
-    stellaUnlockRequested = false;
-
-    if (!isOpen)
-    {
-      isOpen = true;
-      triggerRelay(LOW);  // LOW = relay energised = door unlocked
-      publishState("unlocked");
-      Serial.println("[STELLA] UWB threshold met — door unlocked!");
+    // ── Stella UWB ───────────────────────────────────────────────────────
+    if (stellaUnlockRequested) {
+        stellaUnlockRequested = false;
+        if (getLockState() == LockState::LOCKED) {
+            Serial.println("[STELLA] UWB threshold met — unlocking!");
+            grantAccess(AccessSource::UWB);
+            publishState("unlocked");
+        }
     }
-  }
-  Serial.print("Door State: ");
-  Serial.println(isOpen ? "UNLOCKED" : "LOCKED");
-  delay(500);
 
-  esp_task_wdt_reset();
+    esp_task_wdt_reset();
+    delay(500);
 }
 #endif

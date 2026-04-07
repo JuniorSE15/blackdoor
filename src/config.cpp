@@ -23,9 +23,12 @@ void setupConfig()
     nfc.SAMConfig();
 }
 
+void triggerRelay(int state) {
+    digitalWrite(RELAY_PIN, state);
+}
+
 void wakeUpHardware(volatile bool *isOpen)
-{ 
-    // TODO: implement
-    digitalWrite(RELAY_PIN, HIGH);
+{
+    triggerRelay(HIGH);  // Ensure door starts locked
     *isOpen = false;
 }
