@@ -73,9 +73,9 @@ bool connectToWiFi(const char *ssid, const char *password)
 
 PubSubClient &setupMQTT(const char *id, const char *address, int port)
 {
-    deviceId = String(id);
-    stateTopic = String(TOPICPREFIX) + deviceId + "/state";
-    actionTopic = String(TOPICPREFIX) + deviceId + "/action";
+    // deviceId = String(id);
+    stateTopic = String(TOPICPREFIX) + "+" + "/state";
+    actionTopic = String(TOPICPREFIX) + "+" + "/action";
 
     mqttClient.setServer(address, port);
     mqttClient.setCallback(mqttCallback);
