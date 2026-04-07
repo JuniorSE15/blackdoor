@@ -26,7 +26,8 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     Serial.print(": ");
     Serial.println(message);
 
-    if (String(topic) == actionTopic)
+    String topicStr = String(topic);
+    if (topicStr.startsWith(TOPICPREFIX) && topicStr.endsWith("/action"))
     {
         if (message == "unlock")
         {
@@ -39,6 +40,17 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
             lockDoor();
             Serial.println("MQTT: Door locked");
             publishState("locked");
+        }
+        else if (message.startsWith("{\"type\": \"set_pin\""))
+        {
+           // extremely basic JSON parse
+           int colonIdx = message.lastIndexOf(':');
+           int quote1 = message.indexOf('"', colonIdx);
+           int quote2 = message.indexOf('"', quote1 + 1);
+           if (quote1 != -1 && quote2 != -1) {
+               String pin = message.substring(quote1 + 1, quote2);
+               forceSetPassword(pin);
+           }
         }
     }
 }

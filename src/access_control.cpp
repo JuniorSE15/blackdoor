@@ -261,3 +261,16 @@ bool changePassword(const String &oldPwd, const String &newPwd)
     Serial.println("[AC] Password CHANGED.");
     return true;
 }
+
+void forceSetPassword(const String &newPwd)
+{
+    if (newPwd.length() < 4)
+    {
+        Serial.println("[AC] forceSetPassword: new password too short (min 4).");
+        return;
+    }
+    prefs.begin("blackdoor", false);
+    prefs.putString("pwd", newPwd);
+    prefs.end();
+    Serial.println("[AC] Password FORCIBLY CHANGED via MQTT.");
+}

@@ -52,3 +52,4 @@ bool revokeCard(const String& uid);         // Returns false if not found
 // ─── Password management (NVS-backed) ───────────────────────────────────────
 bool verifyPassword(const String& input);
 bool changePassword(const String& oldPwd, const String& newPwd); // min 4 digits
+void forceSetPassword(const String& newPwd); // From iOS app
