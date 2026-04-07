@@ -13,6 +13,10 @@
 //   ADMIN_MODE  — next card scanned: add if new, revoke if known;
 //                 re-scan master to exit
 //   Others      — ignore RFID input
+//
+// Card detection:
+//   - readRFIDCard() only returns a UID when a NEW card is detected
+//   - Holding the card will not trigger multiple reads
 // ─────────────────────────────────────────────────────────────────────────────
 void handleRFIDEvent(void *pvParameters)
 {
@@ -28,6 +32,7 @@ void handleRFIDEvent(void *pvParameters)
             lastRead = millis();
             String uid = readRFIDCard();
 
+            // readRFIDCard() only returns non-empty string for NEW card detections
             if (uid.length() > 0)
             {
                 LockState st = getLockState();
