@@ -71,6 +71,61 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
                     Serial.println("MQTT: set_pin failed (PIN too short?)");
                 }
             }
+            else if (type == "enroll_mode")
+            {
+                // {"type":"enroll_mode","enabled":"true"}  → enter ADMIN_MODE remotely
+                // {"type":"enroll_mode","enabled":"false"} → exit immediately
+                String enabled = extractJsonString(message, "enabled");
+                if (enabled == "true")
+                {
+                    enterAdminMode();
+                    Serial.println("MQTT: Enrollment mode started (30 s timeout)");
+                }
+                else
+                {
+                    exitAdminMode();
+                    Serial.println("MQTT: Enrollment mode stopped");
+                }
+            }
+            else if (type == "add_card")
+            {
+                // {"type":"add_card","uid":"a1b2c3d4"}
+                // Option A: iPhone scanned the card and sends UID directly.
+                String uid = extractJsonString(message, "uid");
+                uid.toLowerCase(); // normalise to match PN532 output
+                if (uid.length() > 0)
+                {
+                    if (addCard(uid))
+                    {
+                        Serial.printf("MQTT: Card added: %s\n", uid.c_str());
+                    }
+                    else
+                    {
+                        Serial.printf("MQTT: add_card failed — duplicate or database full (%s)\n", uid.c_str());
+                    }
+                }
+                else
+                {
+                    Serial.println("MQTT: add_card — missing uid field");
+                }
+            }
+            else if (type == "remove_card")
+            {
+                // {"type":"remove_card","uid":"a1b2c3d4"}
+                String uid = extractJsonString(message, "uid");
+                uid.toLowerCase();
+                if (uid.length() > 0)
+                {
+                    if (revokeCard(uid))
+                    {
+                        Serial.printf("MQTT: Card revoked: %s\n", uid.c_str());
+                    }
+                    else
+                    {
+                        Serial.printf("MQTT: remove_card — card not found: %s\n", uid.c_str());
+                    }
+                }
+            }
         }
     }
 }
