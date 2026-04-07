@@ -68,14 +68,6 @@ void setup()
 
 void loop()
 {
-    // ── Touch sensor (GPIO 12) ────────────────────────────────────────────
-    touch_value_t touchValue = touchRead(TOUCH_PIN);
-    if (touchValue < 40 && getLockState() == LockState::LOCKED) {
-        Serial.println("[HARDWARE] Touch detected — unlocking!");
-        grantAccess(AccessSource::TOUCH);
-        publishState("unlocked");
-    }
-
     // ── Stella UWB ───────────────────────────────────────────────────────
     if (stellaUnlockRequested) {
         stellaUnlockRequested = false;

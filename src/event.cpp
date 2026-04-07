@@ -61,6 +61,7 @@ void handleRFIDEvent(void *pvParameters)
                     {
                         Serial.println("[RFID] New card — adding.");
                         addCard(uid);
+                        buzz(1000, 100); // Beep on card add/revoke
                     }
                 }
                 else if (st == LockState::LOCKED)
@@ -74,6 +75,7 @@ void handleRFIDEvent(void *pvParameters)
                     else
                     {
                         Serial.println("[RFID] DENIED — unauthorized card.");
+                        buzz(500, 500);
                     }
                 }
                 // Ignore RFID when UNLOCKED or PASSWORD_CHANGE_MODE.
@@ -204,6 +206,7 @@ void handleKeypadEvent(void *pvParameters)
                     else
                     {
                         Serial.println("[KEYPAD] WRONG password.");
+                        buzz(500, 500);
                     }
                 }
                 else if (st == LockState::PASSWORD_CHANGE_MODE)

@@ -9,8 +9,6 @@ Adafruit_PN532 nfc(RFID_DATA_PIN, RFID_CLK_PIN);
 
 void setupConfig()
 {
-    pinMode(TOUCH_PIN, INPUT);
-
     pinMode(RELAY_PIN, OUTPUT);
     pinMode(RFID_DATA_PIN, INPUT);
     pinMode(RFID_CLK_PIN, INPUT);
@@ -21,6 +19,12 @@ void setupConfig()
 
     nfc.begin();
     nfc.SAMConfig();
+}
+
+void buzz(int frequency, int duration) {
+    tone(BUZZER_PIN, frequency, duration);
+    delay(duration); // Wait for the tone to finish
+    noTone(BUZZER_PIN); // Stop the tone
 }
 
 void triggerRelay(int state) {
