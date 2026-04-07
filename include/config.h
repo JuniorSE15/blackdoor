@@ -16,9 +16,7 @@
 #define REED_SWITCH_PIN 15 // GPIO pin for reed switch
 #define LED_PIN 13
 #define TOUCHPAD_PIN 12
-
-// debug
-#define TOUCH_PIN 12
+#define BUZZER_PIN 14
 
 #define DOOR_UNLOCK_TIME 8000 // 8 seconds to hold the door open
 
@@ -32,5 +30,6 @@ extern Adafruit_PN532 nfc; // Declare as extern (defined in rfid.cpp)
 void setupConfig();
 void wakeUpHardware(volatile bool *isOpen);
 void triggerRelay(int state); // LOW = unlock, HIGH = lock
+void buzz(int frequency, int duration); // Function to control the buzzer
 
 #endif // CONFIG_H
