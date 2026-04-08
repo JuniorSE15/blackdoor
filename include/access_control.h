@@ -39,8 +39,9 @@ LockState getLockState();
 void resetUnlockTimer();
 
 // ─── Mode transitions ────────────────────────────────────────────────────────
-void enterAdminMode();
+void enterAdminMode(bool remoteEnroll = false);
 void exitAdminMode();           // Reverts to LOCKED
+bool isRemoteEnrollMode();      // True when admin mode was triggered via app/MQTT
 void enterPasswordChangeMode();
 void exitPasswordChangeMode();  // Reverts to LOCKED
 
@@ -49,8 +50,10 @@ bool isMasterCard(const String& uid);       // Compare against hardcoded master 
 bool isAuthorizedCard(const String& uid);   // Check NVS card list
 bool addCard(const String& uid);            // Returns false if full or duplicate
 bool revokeCard(const String& uid);         // Returns false if not found
+int  getCardCount();                        // Number of authorized cards currently stored
+String getCardAt(int index);               // UID at given index (empty string if out of range)
 
 // ─── Password management (NVS-backed) ───────────────────────────────────────
 bool verifyPassword(const String& input);
 bool changePassword(const String& oldPwd, const String& newPwd); // min 4 digits
-void forceSetPassword(const String& newPwd); // From iOS app
+bool setPin(const String& newPin); // Privileged: bypasses old-pin check (use for remote commands)

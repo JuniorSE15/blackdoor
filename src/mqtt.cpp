@@ -5,12 +5,29 @@
 
 const String TOPICPREFIX = "blackdoor/";
 
+// ─── Minimal JSON string extractor ───────────────────────────────────────────
+// Finds `"key":"value"` in a flat JSON object and returns the value.
+// Sufficient for the set_pin payload; no library needed.
+static String extractJsonString(const String &json, const String &key)
+{
+    String searchKey = "\"" + key + "\":\"";
+    int idx = json.indexOf(searchKey);
+    if (idx == -1)
+        return "";
+    int start = idx + searchKey.length();
+    int end = json.indexOf('"', start);
+    if (end == -1)
+        return "";
+    return json.substring(start, end);
+}
+
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
 static String deviceId;
 static String stateTopic;
 static String actionTopic;
+static String cardsTopic;
 
 void mqttCallback(char *topic, byte *payload, unsigned int length)
 {
@@ -26,12 +43,11 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     Serial.print(": ");
     Serial.println(message);
 
-    String topicStr = String(topic);
-    if (topicStr.startsWith(TOPICPREFIX) && topicStr.endsWith("/action"))
+    if (String(topic) == actionTopic)
     {
         if (message == "unlock")
         {
-            grantAccess(AccessSource::UWB);  // reuse UWB source for remote unlock
+            grantAccess(AccessSource::UWB); // reuse UWB source for remote unlock
             Serial.println("MQTT: Door unlocked");
             publishState("unlocked");
         }
@@ -51,16 +67,84 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
                 publishState("locked");
             }
         }
-        else if (message.startsWith("{\"type\": \"set_pin\""))
+        else if (message.startsWith("{"))
         {
-           // extremely basic JSON parse
-           int colonIdx = message.lastIndexOf(':');
-           int quote1 = message.indexOf('"', colonIdx);
-           int quote2 = message.indexOf('"', quote1 + 1);
-           if (quote1 != -1 && quote2 != -1) {
-               String pin = message.substring(quote1 + 1, quote2);
-               forceSetPassword(pin);
-           }
+            String type = extractJsonString(message, "type");
+            if (type == "set_pin")
+            {
+                String newPin = extractJsonString(message, "pin");
+                if (setPin(newPin))
+                {
+                    Serial.println("MQTT: PIN updated successfully");
+                }
+                else
+                {
+                    Serial.println("MQTT: set_pin failed (PIN too short?)");
+                }
+            }
+            else if (type == "enroll_mode")
+            {
+                // {"type":"enroll_mode","enabled":"true"}  → enter ADMIN_MODE remotely
+                // {"type":"enroll_mode","enabled":"false"} → exit immediately
+                String enabled = extractJsonString(message, "enabled");
+                if (enabled == "true")
+                {
+                    enterAdminMode(true); // remote: auto-exit after first card scan
+                    Serial.println("MQTT: Enrollment mode started (auto-exit after one scan)");
+                }
+                else
+                {
+                    exitAdminMode();
+                    Serial.println("MQTT: Enrollment mode stopped");
+                }
+            }
+            else if (type == "add_card")
+            {
+                // {"type":"add_card","uid":"a1b2c3d4"}
+                // Option A: iPhone scanned the card and sends UID directly.
+                String uid = extractJsonString(message, "uid");
+                uid.toLowerCase(); // normalise to match PN532 output
+                if (uid.length() > 0)
+                {
+                    if (addCard(uid))
+                    {
+                        Serial.printf("MQTT: Card added: %s\n", uid.c_str());
+                        publishCards(); // sync updated list back to backend
+                    }
+                    else
+                    {
+                        Serial.printf("MQTT: add_card failed — duplicate or database full (%s)\n", uid.c_str());
+                    }
+                }
+                else
+                {
+                    Serial.println("MQTT: add_card — missing uid field");
+                }
+            }
+            else if (type == "remove_card")
+            {
+                // {"type":"remove_card","uid":"a1b2c3d4"}
+                String uid = extractJsonString(message, "uid");
+                uid.toLowerCase();
+                if (uid.length() > 0)
+                {
+                    if (revokeCard(uid))
+                    {
+                        Serial.printf("MQTT: Card revoked: %s\n", uid.c_str());
+                        publishCards(); // sync updated list back to backend
+                    }
+                    else
+                    {
+                        Serial.printf("MQTT: remove_card — card not found: %s\n", uid.c_str());
+                    }
+                }
+            }
+            else if (type == "list_cards")
+            {
+                // {"type":"list_cards"} — on-demand request to publish the card list
+                Serial.println("MQTT: list_cards requested");
+                publishCards();
+            }
         }
     }
 }
@@ -95,9 +179,10 @@ bool connectToWiFi(const char *ssid, const char *password)
 
 PubSubClient &setupMQTT(const char *id, const char *address, int port)
 {
-    // deviceId = String(id);
-    stateTopic = String(TOPICPREFIX) + "+" + "/state";
-    actionTopic = String(TOPICPREFIX) + "+" + "/action";
+    deviceId = String(id);
+    stateTopic  = String(TOPICPREFIX) + deviceId + "/state";
+    actionTopic = String(TOPICPREFIX) + deviceId + "/action";
+    cardsTopic  = String(TOPICPREFIX) + deviceId + "/cards";
 
     mqttClient.setServer(address, port);
     mqttClient.setCallback(mqttCallback);
@@ -127,6 +212,9 @@ bool connectToMQTT(const char *user, const char *password)
         // Publish initial state
         publishState(isOpen ? "unlocked" : "locked");
 
+        // Publish full card list so the backend DB stays in sync
+        publishCards();
+
         return true;
     }
 
@@ -142,4 +230,29 @@ bool publishState(const char *state)
         return false;
     }
     return mqttClient.publish(stateTopic.c_str(), state, true); // retained
+}
+
+// Publishes the full authorized card list as a retained JSON message.
+// Topic: blackdoor/{deviceId}/cards
+// Payload: {"cards":["uid1","uid2",...]}
+// Called on connect, after add/remove via MQTT, and on list_cards command.
+bool publishCards()
+{
+    if (!mqttClient.connected())
+    {
+        return false;
+    }
+
+    String payload = "{\"cards\":[";
+    int count = getCardCount();
+    for (int i = 0; i < count; i++)
+    {
+        if (i > 0)
+            payload += ",";
+        payload += "\"" + getCardAt(i) + "\"";
+    }
+    payload += "]}";
+
+    Serial.printf("[MQTT] Publishing card list (%d card(s)): %s\n", count, payload.c_str());
+    return mqttClient.publish(cardsTopic.c_str(), payload.c_str(), true); // retained
 }
