@@ -12,5 +12,6 @@ bool connectToWiFi(const char* ssid, const char* password);
 PubSubClient& setupMQTT(const char* id, const char* broker, int port);
 bool connectToMQTT(const char *user, const char *password);
 bool publishState(const char* state);
+bool publishCards();  // Publish full authorized card list to blackdoor/{deviceId}/cards (retained)
 
 #endif // MQTT_H

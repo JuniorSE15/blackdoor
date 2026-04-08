@@ -27,6 +27,7 @@ PubSubClient mqttClient(wifiClient);
 static String deviceId;
 static String stateTopic;
 static String actionTopic;
+static String cardsTopic;
 
 void mqttCallback(char *topic, byte *payload, unsigned int length)
 {
@@ -52,9 +53,19 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
         }
         else if (message == "lock")
         {
-            lockDoor();
-            Serial.println("MQTT: Door locked");
-            publishState("locked");
+            if (doorPhysicallyOpen)
+            {
+                // Solenoid bolt cannot engage while the door is open — the bolt
+                // would slam into the strike plate and jam. Reject the command.
+                Serial.println("MQTT: lock command IGNORED — door is physically open.");
+                publishState("open"); // remind the app of the actual state
+            }
+            else
+            {
+                lockDoor();
+                Serial.println("MQTT: Door locked");
+                publishState("locked");
+            }
         }
         else if (message.startsWith("{"))
         {
@@ -78,8 +89,8 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
                 String enabled = extractJsonString(message, "enabled");
                 if (enabled == "true")
                 {
-                    enterAdminMode();
-                    Serial.println("MQTT: Enrollment mode started (30 s timeout)");
+                    enterAdminMode(true); // remote: auto-exit after first card scan
+                    Serial.println("MQTT: Enrollment mode started (auto-exit after one scan)");
                 }
                 else
                 {
@@ -98,6 +109,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
                     if (addCard(uid))
                     {
                         Serial.printf("MQTT: Card added: %s\n", uid.c_str());
+                        publishCards(); // sync updated list back to backend
                     }
                     else
                     {
@@ -119,12 +131,19 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
                     if (revokeCard(uid))
                     {
                         Serial.printf("MQTT: Card revoked: %s\n", uid.c_str());
+                        publishCards(); // sync updated list back to backend
                     }
                     else
                     {
                         Serial.printf("MQTT: remove_card — card not found: %s\n", uid.c_str());
                     }
                 }
+            }
+            else if (type == "list_cards")
+            {
+                // {"type":"list_cards"} — on-demand request to publish the card list
+                Serial.println("MQTT: list_cards requested");
+                publishCards();
             }
         }
     }
@@ -161,8 +180,9 @@ bool connectToWiFi(const char *ssid, const char *password)
 PubSubClient &setupMQTT(const char *id, const char *address, int port)
 {
     deviceId = String(id);
-    stateTopic = String(TOPICPREFIX) + deviceId + "/state";
+    stateTopic  = String(TOPICPREFIX) + deviceId + "/state";
     actionTopic = String(TOPICPREFIX) + deviceId + "/action";
+    cardsTopic  = String(TOPICPREFIX) + deviceId + "/cards";
 
     mqttClient.setServer(address, port);
     mqttClient.setCallback(mqttCallback);
@@ -192,6 +212,9 @@ bool connectToMQTT(const char *user, const char *password)
         // Publish initial state
         publishState(isOpen ? "unlocked" : "locked");
 
+        // Publish full card list so the backend DB stays in sync
+        publishCards();
+
         return true;
     }
 
@@ -207,4 +230,29 @@ bool publishState(const char *state)
         return false;
     }
     return mqttClient.publish(stateTopic.c_str(), state, true); // retained
+}
+
+// Publishes the full authorized card list as a retained JSON message.
+// Topic: blackdoor/{deviceId}/cards
+// Payload: {"cards":["uid1","uid2",...]}
+// Called on connect, after add/remove via MQTT, and on list_cards command.
+bool publishCards()
+{
+    if (!mqttClient.connected())
+    {
+        return false;
+    }
+
+    String payload = "{\"cards\":[";
+    int count = getCardCount();
+    for (int i = 0; i < count; i++)
+    {
+        if (i > 0)
+            payload += ",";
+        payload += "\"" + getCardAt(i) + "\"";
+    }
+    payload += "]}";
+
+    Serial.printf("[MQTT] Publishing card list (%d card(s)): %s\n", count, payload.c_str());
+    return mqttClient.publish(cardsTopic.c_str(), payload.c_str(), true); // retained
 }

@@ -56,12 +56,19 @@ void handleRFIDEvent(void *pvParameters)
                     {
                         Serial.println("[RFID] Known card — revoking.");
                         revokeCard(uid);
+                        publishCards(); // sync updated list to backend DB
                     }
                     else
                     {
                         Serial.println("[RFID] New card — adding.");
                         addCard(uid);
                         buzz(1000, 100); // Beep on card add/revoke
+                        publishCards(); // sync updated list to backend DB
+                    }
+                    if (isRemoteEnrollMode())
+                    {
+                        Serial.println("[RFID] Remote enrollment complete — exiting admin mode.");
+                        exitAdminMode();
                     }
                 }
                 else if (st == LockState::LOCKED)
@@ -268,6 +275,7 @@ void handleKeypadEvent(void *pvParameters)
                 {
                     appendInput(key);
                     Serial.printf("[KEYPAD] %d digit(s) entered.\n", inputLen);
+                    buzz(100, 100); 
                 }
             }
         }
@@ -324,13 +332,19 @@ void handleDoorEvent(void *pvParameters)
 
     bool lastRawOpen = false;
     bool stableDoorOpen = false;
+    bool prevStableDoorOpen = false; // last state we acted on — for change detection
     unsigned long debounceStartMs = 0;
     const unsigned long DEBOUNCE_MS = 50;
 
     for (;;)
     {
-        // Reed switch: LOW = door physically open (magnet away from sensor).
-        bool rawOpen = (digitalRead(REED_SWITCH_PIN) == LOW);
+        // Reed switch wiring: GPIO 15 INPUT_PULLUP, NC switch.
+        //   Magnet present (door CLOSED) → NC contacts open → pull-up holds HIGH → LOW=false
+        //   Magnet absent  (door OPEN)   → NC contacts close → GPIO pulled LOW  → LOW=true
+        bool rawOpen = (digitalRead(REED_SWITCH_PIN) == HIGH);
+
+        // Debounce: ignore readings until the raw value has been stable for
+        // DEBOUNCE_MS. Eliminates switch bounce and door-frame vibration noise.
         if (rawOpen != lastRawOpen)
         {
             lastRawOpen = rawOpen;
@@ -341,10 +355,41 @@ void handleDoorEvent(void *pvParameters)
             stableDoorOpen = lastRawOpen;
         }
 
-        // Keep resetting the auto-lock timer while door is physically open.
+        // Act only on state CHANGES to avoid flooding MQTT and Serial.
+        if (stableDoorOpen != prevStableDoorOpen)
+        {
+            prevStableDoorOpen = stableDoorOpen;
+            doorPhysicallyOpen = stableDoorOpen; // update shared flag
+
+            if (stableDoorOpen)
+            {
+                Serial.println("[DOOR] Reed: door OPENED (magnet gone, contacts closed, GPIO LOW).");
+                publishState("open");
+            }
+            else
+            {
+                Serial.println("[DOOR] Reed: door CLOSED (magnet present, contacts open, GPIO HIGH).");
+                // Door is back in frame — report the actual solenoid state.
+                publishState(isOpen ? "unlocked" : "locked");
+            }
+        }
+
+        // While door is physically open and solenoid is unlocked, keep resetting
+        // the auto-lock timer so the bolt doesn't try to extend while the door
+        // is still moving through the frame.
         if (stableDoorOpen && getLockState() == LockState::UNLOCKED)
         {
             resetUnlockTimer();
+        }
+
+        // Conflict: if the state machine timed out and just locked the solenoid
+        // while the door is still physically open, warn on Serial. The lock still
+        // executes (security takes priority), but MQTT will have published "open"
+        // when the door opened so the app already knows.
+        if (stableDoorOpen && getLockState() == LockState::LOCKED)
+        {
+            Serial.println("[DOOR] WARNING: solenoid LOCKED while door is physically open.");
+            buzz(2000, 1000); 
         }
 
         // Tick the state machine (auto-lock, admin/pwd-change timeouts).
