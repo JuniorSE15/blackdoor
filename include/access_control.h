@@ -38,8 +38,9 @@ LockState getLockState();
 void resetUnlockTimer();
 
 // ─── Mode transitions ────────────────────────────────────────────────────────
-void enterAdminMode();
+void enterAdminMode(bool remoteEnroll = false);
 void exitAdminMode();           // Reverts to LOCKED
+bool isRemoteEnrollMode();      // True when admin mode was triggered via app/MQTT
 void enterPasswordChangeMode();
 void exitPasswordChangeMode();  // Reverts to LOCKED
 

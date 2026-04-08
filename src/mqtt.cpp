@@ -79,8 +79,8 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
                 String enabled = extractJsonString(message, "enabled");
                 if (enabled == "true")
                 {
-                    enterAdminMode();
-                    Serial.println("MQTT: Enrollment mode started (30 s timeout)");
+                    enterAdminMode(true); // remote: auto-exit after first card scan
+                    Serial.println("MQTT: Enrollment mode started (auto-exit after one scan)");
                 }
                 else
                 {

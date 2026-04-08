@@ -65,6 +65,11 @@ void handleRFIDEvent(void *pvParameters)
                         buzz(1000, 100); // Beep on card add/revoke
                         publishCards(); // sync updated list to backend DB
                     }
+                    if (isRemoteEnrollMode())
+                    {
+                        Serial.println("[RFID] Remote enrollment complete — exiting admin mode.");
+                        exitAdminMode();
+                    }
                 }
                 else if (st == LockState::LOCKED)
                 {

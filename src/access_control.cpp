@@ -25,6 +25,7 @@ static String cardList[MAX_CARDS];
 static int cardCount = 0;
 
 static Preferences prefs;
+static bool remoteEnrollMode = false; // set when admin mode is triggered via app/MQTT
 
 // ─── NVS helpers ─────────────────────────────────────────────────────────────
 // Cards are stored as a semicolon-separated string: "uid1;uid2;uid3"
@@ -158,23 +159,37 @@ void handleStateMachine()
 }
 
 // ─── Mode transitions ────────────────────────────────────────────────────────
-void enterAdminMode()
+void enterAdminMode(bool remoteEnroll)
 {
-    // beep pattern: 2 quick short beeps 
+    remoteEnrollMode = remoteEnroll;
+    // beep pattern: 2 quick short beeps
     buzz(1000, 100);
     delay(150);
     buzz(1000, 100);
     currentState = LockState::ADMIN_MODE;
     modeStartMs = millis();
     Serial.println("[AC] *** ADMIN MODE ***");
-    Serial.println("[AC] Scan card to ADD (if new) or REVOKE (if known).");
-    Serial.println("[AC] Scan master card again to exit. Timeout: 30 s.");
+    if (remoteEnroll)
+    {
+        Serial.println("[AC] Remote enrollment — scan ONE card to add. Auto-exits after scan.");
+    }
+    else
+    {
+        Serial.println("[AC] Scan card to ADD (if new) or REVOKE (if known).");
+        Serial.println("[AC] Scan master card again to exit. Timeout: 30 s.");
+    }
 }
 
 void exitAdminMode()
 {
+    remoteEnrollMode = false;
     buzz(1000, 100); // Single beep on exit
     lockDoor();
+}
+
+bool isRemoteEnrollMode()
+{
+    return remoteEnrollMode;
 }
 
 void enterPasswordChangeMode()
