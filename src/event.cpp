@@ -337,6 +337,20 @@ void handleDoorEvent(void *pvParameters)
 
     for (;;)
     {
+        // ignore reed switch if door is triggered by button press
+        if (digitalRead(BUTTON_PIN) == HIGH) {
+            Serial.println("[BUTTON] Press detected — toggling lock state.");
+            if (getLockState() == LockState::LOCKED) {
+                digitalWrite(RELAY_PIN, LOW);
+                publishState("unlocked");
+            } else {
+                digitalWrite(RELAY_PIN, HIGH);
+                publishState("locked");
+            }
+            delay(500); // Debounce delay for button
+            continue;
+        }
+
         // Reed switch wiring: GPIO 15 INPUT_PULLUP, NC switch.
         //   Magnet present (door CLOSED) → NC contacts open → pull-up holds HIGH → LOW=false
         //   Magnet absent  (door OPEN)   → NC contacts close → GPIO pulled LOW  → LOW=true
