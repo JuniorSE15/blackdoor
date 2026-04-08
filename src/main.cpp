@@ -68,6 +68,26 @@ void setup()
 
 void loop()
 {
+    // ── Physical Exit Button ─────────────────────────────────────────────
+    static unsigned long lastButtonPress = 0;
+    const unsigned long BUTTON_DEBOUNCE_MS = 1000; // Wait 1 second between presses
+
+    if (digitalRead(BUTTON_PIN) == LOW) {
+        if (millis() - lastButtonPress > BUTTON_DEBOUNCE_MS) {
+            lastButtonPress = millis();
+            Serial.println("[BUTTON] Exit button pressed.");
+
+            // Only unlock if the door is currently locked
+            if (getLockState() == LockState::LOCKED) {
+                // Use the AccessSource::TOUCH (or add AccessSource::BUTTON to your enum)
+                grantAccess(AccessSource::TOUCH); 
+                
+                // Publish to your Go backend / iOS app
+                publishState("unlocked");
+            }
+        }
+    }
+
     // ── Stella UWB ───────────────────────────────────────────────────────
     if (stellaUnlockRequested) {
         stellaUnlockRequested = false;
@@ -78,7 +98,6 @@ void loop()
         }
     }
 
-    // esp_task_wdt_reset();
-    delay(500);
+    delay(100); // Small delay to prevent the loop from running too fast
 }
 #endif

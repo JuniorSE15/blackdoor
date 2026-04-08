@@ -16,6 +16,7 @@ void setupConfig()
     pinMode(REED_SWITCH_PIN, INPUT_PULLUP);
     pinMode(LED_PIN, OUTPUT);
     pinMode(TOUCHPAD_PIN, INPUT);
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
 
     nfc.begin();
     nfc.SAMConfig();

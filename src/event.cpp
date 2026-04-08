@@ -275,6 +275,7 @@ void handleKeypadEvent(void *pvParameters)
                 {
                     appendInput(key);
                     Serial.printf("[KEYPAD] %d digit(s) entered.\n", inputLen);
+                    buzz(100, 100); 
                 }
             }
         }
@@ -388,6 +389,7 @@ void handleDoorEvent(void *pvParameters)
         if (stableDoorOpen && getLockState() == LockState::LOCKED)
         {
             Serial.println("[DOOR] WARNING: solenoid LOCKED while door is physically open.");
+            buzz(2000, 1000); 
         }
 
         // Tick the state machine (auto-lock, admin/pwd-change timeouts).
