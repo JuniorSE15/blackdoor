@@ -15,6 +15,7 @@ static const int MAX_CARDS = 20;
 
 // ─── Shared state ────────────────────────────────────────────────────────────
 volatile bool isOpen = false;
+volatile bool doorPhysicallyOpen = false;
 
 static LockState currentState = LockState::LOCKED;
 static uint32_t unlockStartMs = 0;

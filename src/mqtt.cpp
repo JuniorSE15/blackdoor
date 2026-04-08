@@ -37,9 +37,19 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
         }
         else if (message == "lock")
         {
-            lockDoor();
-            Serial.println("MQTT: Door locked");
-            publishState("locked");
+            if (doorPhysicallyOpen)
+            {
+                // Solenoid bolt cannot engage while the door is open — the bolt
+                // would slam into the strike plate and jam. Reject the command.
+                Serial.println("MQTT: lock command IGNORED — door is physically open.");
+                publishState("open"); // remind the app of the actual state
+            }
+            else
+            {
+                lockDoor();
+                Serial.println("MQTT: Door locked");
+                publishState("locked");
+            }
         }
         else if (message.startsWith("{\"type\": \"set_pin\""))
         {

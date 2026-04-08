@@ -17,8 +17,9 @@ enum class AccessSource {
     UWB
 };
 
-// ─── Shared volatile lock state (defined in access_control.cpp) ─────────────
-extern volatile bool isOpen;
+// ─── Shared volatile state (defined in access_control.cpp) ──────────────────
+extern volatile bool isOpen;          // true = solenoid unlocked
+extern volatile bool doorPhysicallyOpen; // true = reed switch detects door open
 
 // ─── Lifecycle ───────────────────────────────────────────────────────────────
 // Call once in setup() after setupConfig().
