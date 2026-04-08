@@ -340,7 +340,7 @@ void handleDoorEvent(void *pvParameters)
         // Reed switch wiring: GPIO 15 INPUT_PULLUP, NC switch.
         //   Magnet present (door CLOSED) → NC contacts open → pull-up holds HIGH → LOW=false
         //   Magnet absent  (door OPEN)   → NC contacts close → GPIO pulled LOW  → LOW=true
-        bool rawOpen = (digitalRead(REED_SWITCH_PIN) == LOW);
+        bool rawOpen = (digitalRead(REED_SWITCH_PIN) == HIGH);
 
         // Debounce: ignore readings until the raw value has been stable for
         // DEBOUNCE_MS. Eliminates switch bounce and door-frame vibration noise.
