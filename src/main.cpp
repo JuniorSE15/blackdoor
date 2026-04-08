@@ -69,17 +69,16 @@ void setup()
 void loop()
 {
     // -- Button test (GPIO 12) --
-    // manual door control
-    if (digitalRead(BUTTON_PIN) == LOW) {
+    if (digitalRead(BUTTON_PIN) == HIGH) {
         Serial.println("[BUTTON] Press detected — toggling lock state.");
         if (getLockState() == LockState::LOCKED) {
             grantAccess(AccessSource::TOUCH);
             publishState("unlocked");
         } else {
-            lockDoor();
+            triggerRelay(HIGH); // Lock the door
             publishState("locked");
         }
-        delay(500); // Debounce delay
+        delay(500); // Debounce delay for button
     }
 
     // ── Stella UWB ───────────────────────────────────────────────────────
