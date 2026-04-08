@@ -25,7 +25,6 @@ static String cardList[MAX_CARDS];
 static int cardCount = 0;
 
 static Preferences prefs;
-static bool remoteEnrollMode = false; // set when admin mode is triggered via app/MQTT
 
 // ─── NVS helpers ─────────────────────────────────────────────────────────────
 // Cards are stored as a semicolon-separated string: "uid1;uid2;uid3"
@@ -85,7 +84,7 @@ void setupAccessControl()
     Serial.printf("[AC] Master card UID: %s\n", MASTER_CARD_UID);
 }
 
-// ─── Core lock control ─────────────────────────────────────
+// ─── Core lock control ───────────────────────────────────────────────────────
 void grantAccess(AccessSource source)
 {
     static const char *names[] = {"RFID", "KEYPAD", "TOUCH", "UWB"};
@@ -94,7 +93,6 @@ void grantAccess(AccessSource source)
     isOpen = true;
     unlockStartMs = millis();
     currentState = LockState::UNLOCKED;
-    buzz(2000, 200); // Beep on unlock
     triggerRelay(LOW); // LOW = relay energised = unlocked
 }
 
@@ -103,7 +101,6 @@ void lockDoor()
     isOpen = false;
     currentState = LockState::LOCKED;
     triggerRelay(HIGH); // HIGH = relay off = locked
-    buzz(1000, 200); // Beep on lock
     Serial.println("[AC] Door LOCKED");
 }
 
@@ -159,44 +156,22 @@ void handleStateMachine()
 }
 
 // ─── Mode transitions ────────────────────────────────────────────────────────
-void enterAdminMode(bool remoteEnroll)
+void enterAdminMode()
 {
-    remoteEnrollMode = remoteEnroll;
-    // beep pattern: 2 quick short beeps
-    buzz(1000, 100);
-    delay(150);
-    buzz(1000, 100);
     currentState = LockState::ADMIN_MODE;
     modeStartMs = millis();
     Serial.println("[AC] *** ADMIN MODE ***");
-    if (remoteEnroll)
-    {
-        Serial.println("[AC] Remote enrollment — scan ONE card to add. Auto-exits after scan.");
-    }
-    else
-    {
-        Serial.println("[AC] Scan card to ADD (if new) or REVOKE (if known).");
-        Serial.println("[AC] Scan master card again to exit. Timeout: 30 s.");
-    }
+    Serial.println("[AC] Scan card to ADD (if new) or REVOKE (if known).");
+    Serial.println("[AC] Scan master card again to exit. Timeout: 30 s.");
 }
 
 void exitAdminMode()
 {
-    remoteEnrollMode = false;
-    buzz(1000, 100); // Single beep on exit
     lockDoor();
-}
-
-bool isRemoteEnrollMode()
-{
-    return remoteEnrollMode;
 }
 
 void enterPasswordChangeMode()
 {
-    buzz(1000, 100);
-    delay(150);
-    buzz(1000, 100);
     currentState = LockState::PASSWORD_CHANGE_MODE;
     modeStartMs = millis();
     Serial.println("[AC] *** PASSWORD CHANGE MODE ***");
@@ -206,7 +181,6 @@ void enterPasswordChangeMode()
 
 void exitPasswordChangeMode()
 {
-    buzz(1000, 100); // Single beep on exit
     lockDoor();
 }
 
@@ -260,18 +234,6 @@ bool revokeCard(const String &uid)
     return false;
 }
 
-int getCardCount()
-{
-    return cardCount;
-}
-
-String getCardAt(int index)
-{
-    if (index < 0 || index >= cardCount)
-        return "";
-    return cardList[index];
-}
-
 // ─── Password management ─────────────────────────────────────────────────────
 bool verifyPassword(const String &input)
 {
@@ -279,20 +241,6 @@ bool verifyPassword(const String &input)
     String stored = prefs.getString("pwd", DEFAULT_PASSWORD);
     prefs.end();
     return input == stored;
-}
-
-bool setPin(const String &newPin)
-{
-    if (newPin.length() < 4)
-    {
-        Serial.println("[AC] setPin: PIN too short (min 4).");
-        return false;
-    }
-    prefs.begin("blackdoor", false);
-    prefs.putString("pwd", newPin);
-    prefs.end();
-    Serial.printf("[AC] PIN updated remotely to: %s\n", newPin.c_str());
-    return true;
 }
 
 bool changePassword(const String &oldPwd, const String &newPwd)
@@ -312,4 +260,17 @@ bool changePassword(const String &oldPwd, const String &newPwd)
     prefs.end();
     Serial.println("[AC] Password CHANGED.");
     return true;
+}
+
+void forceSetPassword(const String &newPwd)
+{
+    if (newPwd.length() < 4)
+    {
+        Serial.println("[AC] forceSetPassword: new password too short (min 4).");
+        return;
+    }
+    prefs.begin("blackdoor", false);
+    prefs.putString("pwd", newPwd);
+    prefs.end();
+    Serial.println("[AC] Password FORCIBLY CHANGED via MQTT.");
 }
