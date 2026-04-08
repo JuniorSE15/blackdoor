@@ -376,6 +376,8 @@ void handleDoorEvent(void *pvParameters)
         // While door is physically open and solenoid is unlocked, keep resetting
         // the auto-lock timer so the bolt doesn't try to extend while the door
         // is still moving through the frame.
+        // Note: if the door is held open for a long time, the buzzer will trigger
+
         if (stableDoorOpen && getLockState() == LockState::UNLOCKED)
         {
             resetUnlockTimer();
@@ -388,6 +390,7 @@ void handleDoorEvent(void *pvParameters)
         if (stableDoorOpen && getLockState() == LockState::LOCKED)
         {
             Serial.println("[DOOR] WARNING: solenoid LOCKED while door is physically open.");
+            buzz(2000, 1000);
         }
 
         // Tick the state machine (auto-lock, admin/pwd-change timeouts).

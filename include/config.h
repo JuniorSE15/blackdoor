@@ -18,6 +18,8 @@
 #define TOUCHPAD_PIN 12
 #define BUZZER_PIN 14
 
+#define BUTTON_PIN 12 
+
 #define DOOR_UNLOCK_TIME 8000 // 8 seconds to hold the door open
 
 typedef struct {
